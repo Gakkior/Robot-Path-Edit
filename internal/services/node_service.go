@@ -1,15 +1,15 @@
-﻿// Package services 瀹炵幇涓氬姟閫昏緫灞?
+// Package services 实现业务逻辑�?
 //
-// 璁捐鍙傝€冿細
-// - DDD鐨勫簲鐢ㄦ湇鍔℃ā寮?
-// - Kubernetes鐨勬帶鍒跺櫒妯″紡
-// - 寰湇鍔＄殑涓氬姟閫昏緫灏佽
+// 设计参考：
+// - DDD的应用服务模�?
+// - Kubernetes的控制器模式
+// - 微服务的业务逻辑封装
 //
-// 鐗圭偣锛?
-// 1. 涓氬姟瑙勫垯灏佽锛氬寘鍚墍鏈変笟鍔￠€昏緫
-// 2. 浜嬪姟绠＄悊锛氱‘淇濇暟鎹竴鑷存€?
-// 3. 浜嬩欢鍙戝竷锛氭敮鎸佷簨浠堕┍鍔ㄦ灦鏋?
-// 4. 楠岃瘉鍜屾巿鏉冿細缁熶竴鐨勪笟鍔￠獙璇?
+// 特点�?
+// 1. 业务规则封装：包含所有业务逻辑
+// 2. 事务管理：确保数据一致�?
+// 3. 事件发布：支持事件驱动架�?
+// 4. 验证和授权：统一的业务验�?
 package services
 
 import (
@@ -20,37 +20,37 @@ import (
 	"robot-path-editor/internal/repositories"
 )
 
-// NodeService 鑺傜偣鏈嶅姟鎺ュ彛
+// NodeService 节点服务接口
 type NodeService interface {
-	// 鍩虹鎿嶄綔
+	// 基础操作
 	CreateNode(ctx context.Context, req CreateNodeRequest) (*domain.Node, error)
 	GetNode(ctx context.Context, id domain.NodeID) (*domain.Node, error)
 	UpdateNode(ctx context.Context, req UpdateNodeRequest) (*domain.Node, error)
 	DeleteNode(ctx context.Context, id domain.NodeID) error
 
-	// 鎵归噺鎿嶄綔
+	// 批量操作
 	CreateNodes(ctx context.Context, req CreateNodesRequest) ([]*domain.Node, error)
 	GetNodes(ctx context.Context, req GetNodesRequest) (*GetNodesResponse, error)
 	ListNodes(ctx context.Context) ([]*domain.Node, error)
 
-	// 浣嶇疆鎿嶄綔
+	// 位置操作
 	UpdateNodePosition(ctx context.Context, id domain.NodeID, position domain.Position) error
 	MoveNodes(ctx context.Context, moves []NodeMove) error
 
-	// 鏌ヨ鎿嶄綔
+	// 查询操作
 	SearchNodes(ctx context.Context, req SearchNodesRequest) ([]*domain.Node, error)
 	GetNodesInArea(ctx context.Context, req GetNodesInAreaRequest) ([]*domain.Node, error)
 	GetNearbyNodes(ctx context.Context, req GetNearbyNodesRequest) ([]*domain.Node, error)
 
-	// 鍒嗘瀽鎿嶄綔
+	// 分析操作
 	GetConnectedNodes(ctx context.Context, nodeID domain.NodeID) ([]*domain.Node, error)
 	GetIsolatedNodes(ctx context.Context) ([]*domain.Node, error)
 	ValidateNode(ctx context.Context, node *domain.Node) error
 }
 
-// 璇锋眰鍜屽搷搴旂粨鏋勪綋瀹氫箟
+// 请求和响应结构体定义
 
-// CreateNodeRequest 鍒涘缓鑺傜偣璇锋眰
+// CreateNodeRequest 创建节点请求
 type CreateNodeRequest struct {
 	Name        string                   `json:"name" binding:"required"`
 	Type        domain.NodeType          `json:"type"`
@@ -62,7 +62,7 @@ type CreateNodeRequest struct {
 	Annotations map[string]string        `json:"annotations,omitempty"`
 }
 
-// UpdateNodeRequest 鏇存柊鑺傜偣璇锋眰
+// UpdateNodeRequest 更新节点请求
 type UpdateNodeRequest struct {
 	ID          domain.NodeID            `json:"id" binding:"required"`
 	Name        *string                  `json:"name,omitempty"`
@@ -76,12 +76,12 @@ type UpdateNodeRequest struct {
 	Annotations map[string]string        `json:"annotations,omitempty"`
 }
 
-// CreateNodesRequest 鎵归噺鍒涘缓鑺傜偣璇锋眰
+// CreateNodesRequest 批量创建节点请求
 type CreateNodesRequest struct {
 	Nodes []CreateNodeRequest `json:"nodes" binding:"required,dive"`
 }
 
-// GetNodesRequest 鑾峰彇鑺傜偣鍒楄〃璇锋眰
+// GetNodesRequest 获取节点列表请求
 type GetNodesRequest struct {
 	Filter   repositories.NodeFilter `json:"filter"`
 	Page     int                     `json:"page"`
@@ -90,7 +90,7 @@ type GetNodesRequest struct {
 	Order    string                  `json:"order"`
 }
 
-// GetNodesResponse 鑾峰彇鑺傜偣鍒楄〃鍝嶅簲
+// GetNodesResponse 获取节点列表响应
 type GetNodesResponse struct {
 	Nodes      []*domain.Node `json:"nodes"`
 	Total      int64          `json:"total"`
@@ -99,7 +99,7 @@ type GetNodesResponse struct {
 	TotalPages int            `json:"total_pages"`
 }
 
-// SearchNodesRequest 鎼滅储鑺傜偣璇锋眰
+// SearchNodesRequest 搜索节点请求
 type SearchNodesRequest struct {
 	Query  string            `json:"query"`
 	Type   domain.NodeType   `json:"type,omitempty"`
@@ -107,7 +107,7 @@ type SearchNodesRequest struct {
 	Limit  int               `json:"limit"`
 }
 
-// GetNodesInAreaRequest 鑾峰彇鍖哄煙鍐呰妭鐐硅姹?
+// GetNodesInAreaRequest 获取区域内节点请�?
 type GetNodesInAreaRequest struct {
 	MinX float64 `json:"min_x" binding:"required"`
 	MinY float64 `json:"min_y" binding:"required"`
@@ -115,37 +115,37 @@ type GetNodesInAreaRequest struct {
 	MaxY float64 `json:"max_y" binding:"required"`
 }
 
-// GetNearbyNodesRequest 鑾峰彇闄勮繎鑺傜偣璇锋眰
+// GetNearbyNodesRequest 获取附近节点请求
 type GetNearbyNodesRequest struct {
 	Position domain.Position `json:"position" binding:"required"`
 	Radius   float64         `json:"radius" binding:"required,gt=0"`
 	Limit    int             `json:"limit"`
 }
 
-// NodeMove 鑺傜偣绉诲姩璇锋眰
+// NodeMove 节点移动请求
 type NodeMove struct {
 	NodeID      domain.NodeID   `json:"node_id" binding:"required"`
 	NewPosition domain.Position `json:"new_position" binding:"required"`
 }
 
-// nodeService 鑺傜偣鏈嶅姟瀹炵幇
+// nodeService 节点服务实现
 type nodeService struct {
 	nodeRepo repositories.NodeRepository
 }
 
-// NewNodeService 鍒涘缓鑺傜偣鏈嶅姟瀹炰緥
+// NewNodeService 创建节点服务实例
 func NewNodeService(nodeRepo repositories.NodeRepository) NodeService {
 	return &nodeService{
 		nodeRepo: nodeRepo,
 	}
 }
 
-// CreateNode 鍒涘缓鑺傜偣
+// CreateNode 创建节点
 func (s *nodeService) CreateNode(ctx context.Context, req CreateNodeRequest) (*domain.Node, error) {
-	// 1. 鍒涘缓鑺傜偣瀹炰綋
+	// 1. 创建节点实体
 	node := domain.NewNode(req.Name, req.Position)
 
-	// 2. 璁剧疆鍙€夊睘鎬?
+	// 2. 设置可选属�?
 	if req.Type != "" {
 		node.Type = req.Type
 	}
@@ -170,38 +170,38 @@ func (s *nodeService) CreateNode(ctx context.Context, req CreateNodeRequest) (*d
 		node.Metadata.Annotations = req.Annotations
 	}
 
-	// 3. 涓氬姟瑙勫垯楠岃瘉
+	// 3. 业务规则验证
 	if err := s.ValidateNode(ctx, node); err != nil {
-		return nil, fmt.Errorf("鑺傜偣楠岃瘉澶辫触: %w", err)
+		return nil, fmt.Errorf("节点验证失败: %w", err)
 	}
 
-	// 4. 鎸佷箙鍖?
+	// 4. 持久�?
 	if err := s.nodeRepo.Create(ctx, node); err != nil {
-		return nil, fmt.Errorf("鍒涘缓鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("创建节点失败: %w", err)
 	}
 
 	return node, nil
 }
 
-// GetNode 鑾峰彇鑺傜偣
+// GetNode 获取节点
 func (s *nodeService) GetNode(ctx context.Context, id domain.NodeID) (*domain.Node, error) {
 	node, err := s.nodeRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("获取节点失败: %w", err)
 	}
 
 	return node, nil
 }
 
-// UpdateNode 鏇存柊鑺傜偣
+// UpdateNode 更新节点
 func (s *nodeService) UpdateNode(ctx context.Context, req UpdateNodeRequest) (*domain.Node, error) {
-	// 1. 鑾峰彇鐜版湁鑺傜偣
+	// 1. 获取现有节点
 	node, err := s.nodeRepo.GetByID(ctx, req.ID)
 	if err != nil {
-		return nil, fmt.Errorf("鑺傜偣涓嶅瓨鍦? %w", err)
+		return nil, fmt.Errorf("节点不存�? %w", err)
 	}
 
-	// 2. 搴旂敤鏇存柊
+	// 2. 应用更新
 	if req.Name != nil {
 		node.Name = *req.Name
 	}
@@ -238,54 +238,54 @@ func (s *nodeService) UpdateNode(ctx context.Context, req UpdateNodeRequest) (*d
 		node.Metadata.Annotations = req.Annotations
 	}
 
-	// 3. 楠岃瘉鏇存柊鍚庣殑鑺傜偣
+	// 3. 验证更新后的节点
 	if err := s.ValidateNode(ctx, node); err != nil {
-		return nil, fmt.Errorf("鑺傜偣楠岃瘉澶辫触: %w", err)
+		return nil, fmt.Errorf("节点验证失败: %w", err)
 	}
 
-	// 4. 鎸佷箙鍖栨洿鏂?
+	// 4. 持久化更�?
 	if err := s.nodeRepo.Update(ctx, node); err != nil {
-		return nil, fmt.Errorf("鏇存柊鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("更新节点失败: %w", err)
 	}
 
 	return node, nil
 }
 
-// DeleteNode 鍒犻櫎鑺傜偣
+// DeleteNode 删除节点
 func (s *nodeService) DeleteNode(ctx context.Context, id domain.NodeID) error {
-	// 1. 妫€鏌ヨ妭鐐规槸鍚﹀瓨鍦?
+	// 1. 检查节点是否存�?
 	_, err := s.nodeRepo.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("鑺傜偣涓嶅瓨鍦? %w", err)
+		return fmt.Errorf("节点不存�? %w", err)
 	}
 
-	// 2. 妫€鏌ユ槸鍚︽湁璺緞杩炴帴 (涓氬姟瑙勫垯: 涓嶈兘鍒犻櫎鏈夎繛鎺ョ殑鑺傜偣)
+	// 2. 检查是否有路径连接 (业务规则: 不能删除有连接的节点)
 	connectedNodes, err := s.nodeRepo.GetConnectedNodes(ctx, id)
 	if err != nil {
-		return fmt.Errorf("妫€鏌ヨ妭鐐硅繛鎺ュけ璐? %w", err)
+		return fmt.Errorf("检查节点连接失�? %w", err)
 	}
 
 	if len(connectedNodes) > 0 {
-		return fmt.Errorf("涓嶈兘鍒犻櫎鏈夎矾寰勮繛鎺ョ殑鑺傜偣锛岃鍏堝垹闄ょ浉鍏宠矾寰?)
+		return fmt.Errorf("不能删除有路径连接的节点，请先删除相关路�?)
 	}
 
-	// 3. 鎵ц鍒犻櫎
+	// 3. 执行删除
 	if err := s.nodeRepo.Delete(ctx, id); err != nil {
-		return fmt.Errorf("鍒犻櫎鑺傜偣澶辫触: %w", err)
+		return fmt.Errorf("删除节点失败: %w", err)
 	}
 
 	return nil
 }
 
-// CreateNodes 鎵归噺鍒涘缓鑺傜偣
+// CreateNodes 批量创建节点
 func (s *nodeService) CreateNodes(ctx context.Context, req CreateNodesRequest) ([]*domain.Node, error) {
 	nodes := make([]*domain.Node, 0, len(req.Nodes))
 
-	// 1. 鍒涘缓鎵€鏈夎妭鐐瑰疄浣?
+	// 1. 创建所有节点实�?
 	for _, nodeReq := range req.Nodes {
 		node := domain.NewNode(nodeReq.Name, nodeReq.Position)
 
-		// 璁剧疆灞炴€?
+		// 设置属�?
 		if nodeReq.Type != "" {
 			node.Type = nodeReq.Type
 		}
@@ -305,25 +305,25 @@ func (s *nodeService) CreateNodes(ctx context.Context, req CreateNodesRequest) (
 			node.Metadata.Annotations = nodeReq.Annotations
 		}
 
-		// 楠岃瘉鑺傜偣
+		// 验证节点
 		if err := s.ValidateNode(ctx, node); err != nil {
-			return nil, fmt.Errorf("鑺傜偣 %s 楠岃瘉澶辫触: %w", node.Name, err)
+			return nil, fmt.Errorf("节点 %s 验证失败: %w", node.Name, err)
 		}
 
 		nodes = append(nodes, node)
 	}
 
-	// 2. 鎵归噺鍒涘缓
+	// 2. 批量创建
 	if err := s.nodeRepo.CreateBatch(ctx, nodes); err != nil {
-		return nil, fmt.Errorf("鎵归噺鍒涘缓鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("批量创建节点失败: %w", err)
 	}
 
 	return nodes, nil
 }
 
-// GetNodes 鑾峰彇鑺傜偣鍒楄〃
+// GetNodes 获取节点列表
 func (s *nodeService) GetNodes(ctx context.Context, req GetNodesRequest) (*GetNodesResponse, error) {
-	// 1. 璁剧疆榛樿鍒嗛〉鍙傛暟
+	// 1. 设置默认分页参数
 	if req.PageSize <= 0 {
 		req.PageSize = 20
 	}
@@ -331,7 +331,7 @@ func (s *nodeService) GetNodes(ctx context.Context, req GetNodesRequest) (*GetNo
 		req.Page = 1
 	}
 
-	// 2. 鏋勫缓鏌ヨ閫夐」
+	// 2. 构建查询选项
 	options := repositories.ListOptions{
 		Filter:   req.Filter,
 		Page:     req.Page,
@@ -340,18 +340,18 @@ func (s *nodeService) GetNodes(ctx context.Context, req GetNodesRequest) (*GetNo
 		Order:    req.Order,
 	}
 
-	// 3. 鏌ヨ鑺傜偣鍜屾€绘暟
+	// 3. 查询节点和总数
 	nodes, err := s.nodeRepo.List(ctx, options)
 	if err != nil {
-		return nil, fmt.Errorf("鏌ヨ鑺傜偣鍒楄〃澶辫触: %w", err)
+		return nil, fmt.Errorf("查询节点列表失败: %w", err)
 	}
 
 	total, err := s.nodeRepo.Count(ctx, req.Filter)
 	if err != nil {
-		return nil, fmt.Errorf("缁熻鑺傜偣鏁伴噺澶辫触: %w", err)
+		return nil, fmt.Errorf("统计节点数量失败: %w", err)
 	}
 
-	// 4. 璁＄畻鎬婚〉鏁?
+	// 4. 计算总页�?
 	totalPages := int(total) / req.PageSize
 	if int(total)%req.PageSize > 0 {
 		totalPages++
@@ -366,43 +366,43 @@ func (s *nodeService) GetNodes(ctx context.Context, req GetNodesRequest) (*GetNo
 	}, nil
 }
 
-// ListNodes 鑾峰彇鎵€鏈夎妭鐐瑰垪琛?
+// ListNodes 获取所有节点列�?
 func (s *nodeService) ListNodes(ctx context.Context) ([]*domain.Node, error) {
-	// 鏋勫缓鏌ヨ閫夐」锛屼笉鍒嗛〉
+	// 构建查�选项，不分页
 	options := repositories.ListOptions{
-		PageSize: 0, // 0 琛ㄧず涓嶅垎椤?
+		PageSize: 0, // 0 表示不分�?
 	}
 
 	nodes, err := s.nodeRepo.List(ctx, options)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鑺傜偣鍒楄〃澶辫触: %w", err)
+		return nil, fmt.Errorf("获取节点列表失败: %w", err)
 	}
 
 	return nodes, nil
 }
 
-// UpdateNodePosition 鏇存柊鑺傜偣浣嶇疆
+// UpdateNodePosition 更新节点位置
 func (s *nodeService) UpdateNodePosition(ctx context.Context, id domain.NodeID, position domain.Position) error {
-	// 鑾峰彇鑺傜偣
+	// 获取节点
 	node, err := s.nodeRepo.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("鑺傜偣涓嶅瓨鍦? %w", err)
+		return fmt.Errorf("节点不存�? %w", err)
 	}
 
-	// 鏇存柊浣嶇疆
+	// 更新位置
 	node.Position = position
 
-	// 淇濆瓨鏇存柊
+	// 保存更新
 	if err := s.nodeRepo.Update(ctx, node); err != nil {
-		return fmt.Errorf("鏇存柊鑺傜偣浣嶇疆澶辫触: %w", err)
+		return fmt.Errorf("更新节点位置失败: %w", err)
 	}
 
 	return nil
 }
 
-// MoveNodes 鎵归噺绉诲姩鑺傜偣
+// MoveNodes 批量移动节点
 func (s *nodeService) MoveNodes(ctx context.Context, moves []NodeMove) error {
-	// 鑾峰彇鎵€鏈夐渶瑕佺Щ鍔ㄧ殑鑺傜偣
+	// 获取所有需要移动的节点
 	nodeIDs := make([]domain.NodeID, len(moves))
 	for i, move := range moves {
 		nodeIDs[i] = move.NodeID
@@ -410,31 +410,31 @@ func (s *nodeService) MoveNodes(ctx context.Context, moves []NodeMove) error {
 
 	nodes, err := s.nodeRepo.GetByIDs(ctx, nodeIDs)
 	if err != nil {
-		return fmt.Errorf("鑾峰彇鑺傜偣澶辫触: %w", err)
+		return fmt.Errorf("获取节点失败: %w", err)
 	}
 
-	// 鍒涘缓鑺傜偣ID鍒颁綅缃殑鏄犲皠
+	// 创建节点ID到位置的映射
 	nodePositions := make(map[domain.NodeID]domain.Position)
 	for _, move := range moves {
 		nodePositions[move.NodeID] = move.NewPosition
 	}
 
-	// 鏇存柊鑺傜偣浣嶇疆
+	// 更新节点位置
 	for _, node := range nodes {
 		if newPos, exists := nodePositions[node.ID]; exists {
 			node.Position = newPos
 		}
 	}
 
-	// 鎵归噺鏇存柊
+	// 批量更新
 	if err := s.nodeRepo.UpdateBatch(ctx, nodes); err != nil {
-		return fmt.Errorf("鎵归噺鏇存柊鑺傜偣浣嶇疆澶辫触: %w", err)
+		return fmt.Errorf("批量更新节点位置失败: %w", err)
 	}
 
 	return nil
 }
 
-// SearchNodes 鎼滅储鑺傜偣
+// SearchNodes 搜索节点
 func (s *nodeService) SearchNodes(ctx context.Context, req SearchNodesRequest) ([]*domain.Node, error) {
 	filter := repositories.NodeFilter{
 		Name:   req.Query,
@@ -449,30 +449,30 @@ func (s *nodeService) SearchNodes(ctx context.Context, req SearchNodesRequest) (
 
 	nodes, err := s.nodeRepo.List(ctx, options)
 	if err != nil {
-		return nil, fmt.Errorf("鎼滅储鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("搜索节点失败: %w", err)
 	}
 
 	return nodes, nil
 }
 
-// GetNodesInArea 鑾峰彇鍖哄煙鍐呯殑鑺傜偣
+// GetNodesInArea 获取区域内的节点
 func (s *nodeService) GetNodesInArea(ctx context.Context, req GetNodesInAreaRequest) ([]*domain.Node, error) {
 	nodes, err := s.nodeRepo.GetByArea(ctx, req.MinX, req.MinY, req.MaxX, req.MaxY)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鍖哄煙鍐呰妭鐐瑰け璐? %w", err)
+		return nil, fmt.Errorf("获取区域内节点失�? %w", err)
 	}
 
 	return nodes, nil
 }
 
-// GetNearbyNodes 鑾峰彇闄勮繎鐨勮妭鐐?
+// GetNearbyNodes 获取附近的节�?
 func (s *nodeService) GetNearbyNodes(ctx context.Context, req GetNearbyNodesRequest) ([]*domain.Node, error) {
 	nodes, err := s.nodeRepo.GetNearby(ctx, req.Position, req.Radius)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇闄勮繎鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("获取附近节点失败: %w", err)
 	}
 
-	// 濡傛灉璁剧疆浜嗛檺鍒讹紝鎴彇缁撴灉
+	// 如果设置了限制，截取结果
 	if req.Limit > 0 && len(nodes) > req.Limit {
 		nodes = nodes[:req.Limit]
 	}
@@ -480,40 +480,40 @@ func (s *nodeService) GetNearbyNodes(ctx context.Context, req GetNearbyNodesRequ
 	return nodes, nil
 }
 
-// GetConnectedNodes 鑾峰彇杩炴帴鐨勮妭鐐?
+// GetConnectedNodes 获取连接的节�?
 func (s *nodeService) GetConnectedNodes(ctx context.Context, nodeID domain.NodeID) ([]*domain.Node, error) {
 	nodes, err := s.nodeRepo.GetConnectedNodes(ctx, nodeID)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇杩炴帴鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("获取连接节点失败: %w", err)
 	}
 
 	return nodes, nil
 }
 
-// GetIsolatedNodes 鑾峰彇瀛ょ珛鑺傜偣
+// GetIsolatedNodes 获取孤立节点
 func (s *nodeService) GetIsolatedNodes(ctx context.Context) ([]*domain.Node, error) {
 	nodes, err := s.nodeRepo.GetIsolatedNodes(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇瀛ょ珛鑺傜偣澶辫触: %w", err)
+		return nil, fmt.Errorf("获取孤立节点失败: %w", err)
 	}
 
 	return nodes, nil
 }
 
-// ValidateNode 楠岃瘉鑺傜偣
+// ValidateNode 验证节点
 func (s *nodeService) ValidateNode(ctx context.Context, node *domain.Node) error {
-	// 1. 鍩虹楠岃瘉
+	// 1. 基础验证
 	if err := node.IsValid(); err != nil {
 		return err
 	}
 
-	// 2. 涓氬姟瑙勫垯楠岃瘉
+	// 2. 业务规则验证
 
-	// 鍚嶇О涓嶈兘閲嶅锛堝彲閫夌殑涓氬姟瑙勫垯锛?
-	// 杩欓噷鍙互娣诲姞鏇村涓氬姟楠岃瘉閫昏緫
+	// 名称不能重复（可选的业务规则�?
+	// 这里可以添加更多业务验证逻辑
 
-	// 3. 浣嶇疆鍚堢悊鎬ч獙璇?
-	// 鍙互楠岃瘉浣嶇疆鏄惁鍦ㄥ厑璁哥殑鑼冨洿鍐?
+	// 3. 位置合理性验�?
+	// 可以验证位置是否在允许的范围�?
 
 	return nil
 }

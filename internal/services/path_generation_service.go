@@ -1,4 +1,4 @@
-// Package services 璺緞鐢熸垚鏈嶅姟瀹炵幇
+// Package services 路径生成服务实现
 package services
 
 import (
@@ -10,7 +10,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// PathGenerationService 璺緞鐢熸垚鏈嶅姟鎺ュ彛
+// PathGenerationService 路径生成服务接口
 type PathGenerationService interface {
 	GenerateShortestPaths(ctx context.Context, startNodeID domain.NodeID) ([]domain.Path, error)
 	GenerateFullConnectivity(ctx context.Context) ([]domain.Path, error)
@@ -24,7 +24,7 @@ type pathGenerationService struct {
 	pathService PathService
 }
 
-// NewPathGenerationService 鍒涘缓璺緞鐢熸垚鏈嶅姟
+// NewPathGenerationService 创建路径生成服务
 func NewPathGenerationService(nodeService NodeService, pathService PathService) PathGenerationService {
 	return &pathGenerationService{
 		nodeService: nodeService,
@@ -32,14 +32,14 @@ func NewPathGenerationService(nodeService NodeService, pathService PathService) 
 	}
 }
 
-// GenerateShortestPaths 鐢熸垚浠庢寚瀹氳妭鐐瑰埌鎵€鏈夊叾浠栬妭鐐圭殑鏈€鐭矾寰?(鍩轰簬Dijkstra绠楁硶鐨勭畝鍖栫増)
+// GenerateShortestPaths 生成从指定节点到所有其他节点的最短路�?(基于Dijkstra算法的简化版)
 func (s *pathGenerationService) GenerateShortestPaths(ctx context.Context, startNodeID domain.NodeID) ([]domain.Path, error) {
 	nodes, err := s.nodeService.ListNodes(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鑺傜偣鍒楄〃澶辫触: %v", err)
+		return nil, fmt.Errorf("获取节点列表失败: %v", err)
 	}
 
-	// 鎵惧埌璧峰鑺傜偣
+	// 找到起始节点
 	var startNode *domain.Node
 	nodeMap := make(map[domain.NodeID]*domain.Node)
 	for i := range nodes {
@@ -50,36 +50,36 @@ func (s *pathGenerationService) GenerateShortestPaths(ctx context.Context, start
 	}
 
 	if startNode == nil {
-		return nil, fmt.Errorf("璧峰鑺傜偣涓嶅瓨鍦? %s", startNodeID)
+		return nil, fmt.Errorf("起始节点不存�? %s", startNodeID)
 	}
 
-	// 鑾峰彇鐜版湁璺緞浠ユ瀯寤洪偦鎺ュ浘
+	// 获取现有路径以构建邻接图
 	existingPaths, err := s.pathService.ListPaths(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇璺緞鍒楄〃澶辫触: %v", err)
+		return nil, fmt.Errorf("获取路径列表失败: %v", err)
 	}
 
-	// 鏋勫缓閭绘帴鍥?
+	// 构建邻接�?
 	adjacencyList := make(map[domain.NodeID][]domain.NodeID)
 	for _, path := range existingPaths {
 		adjacencyList[path.StartNodeID] = append(adjacencyList[path.StartNodeID], path.EndNodeID)
-		adjacencyList[path.EndNodeID] = append(adjacencyList[path.EndNodeID], path.StartNodeID) // 鍙屽悜
+		adjacencyList[path.EndNodeID] = append(adjacencyList[path.EndNodeID], path.StartNodeID) // 双向
 	}
 
-	// 浣跨敤绠€鍖栫殑Dijkstra绠楁硶
+	// 使用简化的Dijkstra算法
 	distances := make(map[domain.NodeID]float64)
 	previous := make(map[domain.NodeID]domain.NodeID)
 	visited := make(map[domain.NodeID]bool)
 
-	// 鍒濆鍖栬窛绂?
+	// 初始化距�?
 	for _, node := range nodes {
 		distances[node.ID] = math.Inf(1)
 	}
 	distances[startNodeID] = 0
 
-	// Dijkstra涓诲惊鐜?
+	// Dijkstra主循�?
 	for len(visited) < len(nodes) {
-		// 鎵惧埌鏈闂妭鐐逛腑璺濈鏈€灏忕殑
+		// 找到未访问节点中距离最小的
 		minDist := math.Inf(1)
 		var currentNode domain.NodeID
 		for nodeID, dist := range distances {
@@ -90,12 +90,12 @@ func (s *pathGenerationService) GenerateShortestPaths(ctx context.Context, start
 		}
 
 		if minDist == math.Inf(1) {
-			break // 鏃犳硶鍒拌揪鐨勮妭鐐?
+			break // 无法到达的节�?
 		}
 
 		visited[currentNode] = true
 
-		// 鏇存柊閭诲眳鑺傜偣鐨勮窛绂?
+		// 更新邻居节点的距�?
 		for _, neighborID := range adjacencyList[currentNode] {
 			if visited[neighborID] {
 				continue
@@ -113,13 +113,13 @@ func (s *pathGenerationService) GenerateShortestPaths(ctx context.Context, start
 		}
 	}
 
-	// 鐢熸垚鏈€鐭矾寰?
+	// 生成最短路�?
 	var paths []domain.Path
 	for nodeID, prevNodeID := range previous {
 		if nodeID != startNodeID && prevNodeID != "" {
 			path := domain.Path{
 				ID:          domain.PathID(fmt.Sprintf("shortest_%s_%s", prevNodeID, nodeID)),
-				Name:        fmt.Sprintf("鏈€鐭矾寰? %s -> %s", prevNodeID, nodeID),
+				Name:        fmt.Sprintf("最短路�? %s -> %s", prevNodeID, nodeID),
 				Type:        "shortest",
 				Status:      "active",
 				StartNodeID: prevNodeID,
@@ -138,11 +138,11 @@ func (s *pathGenerationService) GenerateShortestPaths(ctx context.Context, start
 	return paths, nil
 }
 
-// GenerateFullConnectivity 鐢熸垚瀹屽叏杩為€氬浘锛堟墍鏈夎妭鐐逛袱涓ょ浉杩烇級
+// GenerateFullConnectivity 生成完全连通图（所有节点两两相连）
 func (s *pathGenerationService) GenerateFullConnectivity(ctx context.Context) ([]domain.Path, error) {
 	nodes, err := s.nodeService.ListNodes(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鑺傜偣鍒楄〃澶辫触: %v", err)
+		return nil, fmt.Errorf("获取节点列表失败: %v", err)
 	}
 
 	var paths []domain.Path
@@ -153,7 +153,7 @@ func (s *pathGenerationService) GenerateFullConnectivity(ctx context.Context) ([
 
 			path := domain.Path{
 				ID:          domain.PathID(fmt.Sprintf("full_%s_%s", node1.ID, node2.ID)),
-				Name:        fmt.Sprintf("杩炴帴: %s <-> %s", node1.Name, node2.Name),
+				Name:        fmt.Sprintf("连接: %s <-> %s", node1.Name, node2.Name),
 				Type:        "full_connectivity",
 				Status:      "active",
 				StartNodeID: node1.ID,
@@ -172,14 +172,14 @@ func (s *pathGenerationService) GenerateFullConnectivity(ctx context.Context) ([
 	return paths, nil
 }
 
-// GenerateTreeStructure 鐢熸垚鏍戠姸缁撴瀯锛堟渶灏忕敓鎴愭爲锛?
+// GenerateTreeStructure 生成树状结构（最小生成树�?
 func (s *pathGenerationService) GenerateTreeStructure(ctx context.Context, rootNodeID domain.NodeID) ([]domain.Path, error) {
 	nodes, err := s.nodeService.ListNodes(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鑺傜偣鍒楄〃澶辫触: %v", err)
+		return nil, fmt.Errorf("获取节点列表失败: %v", err)
 	}
 
-	// 鎵惧埌鏍硅妭鐐?
+	// 找到根节�?
 	var rootNode *domain.Node
 	nodeMap := make(map[domain.NodeID]*domain.Node)
 	for i := range nodes {
@@ -190,10 +190,10 @@ func (s *pathGenerationService) GenerateTreeStructure(ctx context.Context, rootN
 	}
 
 	if rootNode == nil {
-		return nil, fmt.Errorf("鏍硅妭鐐逛笉瀛樺湪: %s", rootNodeID)
+		return nil, fmt.Errorf("根节点不存在: %s", rootNodeID)
 	}
 
-	// 浣跨敤Prim绠楁硶鐢熸垚鏈€灏忕敓鎴愭爲
+	// 使用Prim算法生成最小生成树
 	visited := make(map[domain.NodeID]bool)
 	visited[rootNodeID] = true
 
@@ -207,7 +207,7 @@ func (s *pathGenerationService) GenerateTreeStructure(ctx context.Context, rootN
 	for len(visited) < len(nodes) {
 		var minEdge *edge
 
-		// 鎵惧埌杩炴帴宸茶闂妭鐐瑰拰鏈闂妭鐐圭殑鏈€鐭竟
+		// 找到连接已访问节点和未访问节点的最短边
 		for visitedNodeID := range visited {
 			visitedNode := nodeMap[visitedNodeID]
 			for _, node := range nodes {
@@ -225,14 +225,14 @@ func (s *pathGenerationService) GenerateTreeStructure(ctx context.Context, rootN
 		}
 
 		if minEdge == nil {
-			break // 鏃犳硶杩炴帴鏇村鑺傜偣
+			break // 无法连接更多节点
 		}
 
-		// 娣诲姞杈瑰埌MST
+		// 添加边到MST
 		visited[minEdge.to] = true
 		path := domain.Path{
 			ID:          domain.PathID(fmt.Sprintf("tree_%s_%s", minEdge.from, minEdge.to)),
-			Name:        fmt.Sprintf("鏍戣繛鎺? %s -> %s", minEdge.from, minEdge.to),
+			Name:        fmt.Sprintf("树连�? %s -> %s", minEdge.from, minEdge.to),
 			Type:        "tree",
 			Status:      "active",
 			StartNodeID: minEdge.from,
@@ -250,11 +250,11 @@ func (s *pathGenerationService) GenerateTreeStructure(ctx context.Context, rootN
 	return paths, nil
 }
 
-// GenerateNearestNeighborPaths 鐢熸垚鏈€杩戦偦璺緞锛堟瘡涓妭鐐硅繛鎺ュ埌鏈€杩戠殑N涓偦灞咃級
+// GenerateNearestNeighborPaths 生成最近邻路径（每个节点连接到最近的N个邻居）
 func (s *pathGenerationService) GenerateNearestNeighborPaths(ctx context.Context, maxDistance float64) ([]domain.Path, error) {
 	nodes, err := s.nodeService.ListNodes(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鑺傜偣鍒楄〃澶辫触: %v", err)
+		return nil, fmt.Errorf("获取节点列表失败: %v", err)
 	}
 
 	type neighbor struct {
@@ -263,12 +263,12 @@ func (s *pathGenerationService) GenerateNearestNeighborPaths(ctx context.Context
 	}
 
 	var paths []domain.Path
-	pathSet := make(map[string]bool) // 闃叉閲嶅璺緞
+	pathSet := make(map[string]bool) // 防止重复路径
 
 	for _, node := range nodes {
 		var neighbors []neighbor
 
-		// 璁＄畻鍒版墍鏈夊叾浠栬妭鐐圭殑璺濈
+		// 计算到所有其他节点的距离
 		for _, otherNode := range nodes {
 			if node.ID != otherNode.ID {
 				distance := calculateDistance(node.Position, otherNode.Position)
@@ -281,17 +281,17 @@ func (s *pathGenerationService) GenerateNearestNeighborPaths(ctx context.Context
 			}
 		}
 
-		// 鎸夎窛绂绘帓搴?
+		// 按距离排�?
 		sort.Slice(neighbors, func(i, j int) bool {
 			return neighbors[i].distance < neighbors[j].distance
 		})
 
-		// 杩炴帴鍒版渶杩戠殑閭诲眳锛堟渶澶?涓級
+		// 连接到最近的邻居（最�?个）
 		maxNeighbors := min(3, len(neighbors))
 		for i := 0; i < maxNeighbors; i++ {
 			neighbor := neighbors[i]
 
-			// 鍒涘缓鍞竴鐨勮矾寰勬爣璇嗙锛堥槻姝㈤噸澶嶏級
+			// 创建唯一的路径标识符（防止重复）
 			pathKey := fmt.Sprintf("%s_%s", min(string(node.ID), string(neighbor.nodeID)), max(string(node.ID), string(neighbor.nodeID)))
 			if pathSet[pathKey] {
 				continue
@@ -300,7 +300,7 @@ func (s *pathGenerationService) GenerateNearestNeighborPaths(ctx context.Context
 
 			path := domain.Path{
 				ID:          domain.PathID(fmt.Sprintf("neighbor_%s_%s", node.ID, neighbor.nodeID)),
-				Name:        fmt.Sprintf("鏈€杩戦偦: %s <-> %s", node.Name, neighbor.nodeID),
+				Name:        fmt.Sprintf("最近邻: %s <-> %s", node.Name, neighbor.nodeID),
 				Type:        "nearest_neighbor",
 				Status:      "active",
 				StartNodeID: node.ID,
@@ -319,40 +319,40 @@ func (s *pathGenerationService) GenerateNearestNeighborPaths(ctx context.Context
 	return paths, nil
 }
 
-// GenerateGridPaths 鐢熸垚缃戞牸鐘惰矾寰勶紙閫傜敤浜庤鍒欐帓鍒楃殑鑺傜偣锛?
+// GenerateGridPaths 生成网格状路径（适用于规则排列的节点�?
 func (s *pathGenerationService) GenerateGridPaths(ctx context.Context, connectDiagonal bool) ([]domain.Path, error) {
 	nodes, err := s.nodeService.ListNodes(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇鑺傜偣鍒楄〃澶辫触: %v", err)
+		return nil, fmt.Errorf("获取节点列表失败: %v", err)
 	}
 
 	if len(nodes) == 0 {
 		return []domain.Path{}, nil
 	}
 
-	// 鎸変綅缃帓搴忚妭鐐癸紝鍒涘缓缃戞牸缁撴瀯
+	// 按位置排序节点，创建网格结构
 	sort.Slice(nodes, func(i, j int) bool {
-		if math.Abs(nodes[i].Position.Y-nodes[j].Position.Y) < 10 { // 鍚屼竴琛?
+		if math.Abs(nodes[i].Position.Y-nodes[j].Position.Y) < 10 { // 同一�?
 			return nodes[i].Position.X < nodes[j].Position.X
 		}
 		return nodes[i].Position.Y < nodes[j].Position.Y
 	})
 
 	var paths []domain.Path
-	tolerance := 50.0 // 浣嶇疆瀹瑰樊
+	tolerance := 50.0 // 位置容差
 
-	// 姘村钩杩炴帴锛堝悓涓€琛岀殑鐩搁偦鑺傜偣锛?
+	// 水平连接（同一行的相邻节点�?
 	for i := 0; i < len(nodes)-1; i++ {
 		current := nodes[i]
 		next := nodes[i+1]
 
-		// 妫€鏌ユ槸鍚﹀湪鍚屼竴琛屼笖鐩搁偦
+		// 检查是否在同一行且相邻
 		if math.Abs(current.Position.Y-next.Position.Y) < tolerance {
 			distance := calculateDistance(current.Position, next.Position)
-			if distance < tolerance*3 { // 鐩搁偦鍒ゆ柇
+			if distance < tolerance*3 { // 相邻判断
 				path := domain.Path{
 					ID:          domain.PathID(fmt.Sprintf("grid_h_%s_%s", current.ID, next.ID)),
-					Name:        fmt.Sprintf("缃戞牸姘村钩: %s -> %s", current.Name, next.Name),
+					Name:        fmt.Sprintf("网格水平: %s -> %s", current.Name, next.Name),
 					Type:        "grid_horizontal",
 					Status:      "active",
 					StartNodeID: current.ID,
@@ -369,20 +369,20 @@ func (s *pathGenerationService) GenerateGridPaths(ctx context.Context, connectDi
 		}
 	}
 
-	// 鍨傜洿杩炴帴锛堝悓涓€鍒楃殑鐩搁偦鑺傜偣锛?
+	// 垂直连接（同一列的相邻节点�?
 	for i, node1 := range nodes {
 		for j, node2 := range nodes {
 			if i >= j {
 				continue
 			}
 
-			// 妫€鏌ユ槸鍚﹀湪鍚屼竴鍒?
+			// 检查是否在同一�?
 			if math.Abs(node1.Position.X-node2.Position.X) < tolerance {
 				distance := calculateDistance(node1.Position, node2.Position)
 				if distance < tolerance*3 {
 					path := domain.Path{
 						ID:          domain.PathID(fmt.Sprintf("grid_v_%s_%s", node1.ID, node2.ID)),
-						Name:        fmt.Sprintf("缃戞牸鍨傜洿: %s -> %s", node1.Name, node2.Name),
+						Name:        fmt.Sprintf("网格垂直: %s -> %s", node1.Name, node2.Name),
 						Type:        "grid_vertical",
 						Status:      "active",
 						StartNodeID: node1.ID,
@@ -400,7 +400,7 @@ func (s *pathGenerationService) GenerateGridPaths(ctx context.Context, connectDi
 		}
 	}
 
-	// 瀵硅绾胯繛鎺ワ紙濡傛灉鍚敤锛?
+	// 对角线连接（如果启用�?
 	if connectDiagonal {
 		for i, node1 := range nodes {
 			for j, node2 := range nodes {
@@ -412,11 +412,11 @@ func (s *pathGenerationService) GenerateGridPaths(ctx context.Context, connectDi
 				dx := math.Abs(node1.Position.X - node2.Position.X)
 				dy := math.Abs(node1.Position.Y - node2.Position.Y)
 
-				// 妫€鏌ユ槸鍚︿负瀵硅绾匡紙45搴﹁锛?
+				// 检查是否为对角线（45度角�?
 				if math.Abs(dx-dy) < tolerance && distance < tolerance*2 {
 					path := domain.Path{
 						ID:          domain.PathID(fmt.Sprintf("grid_d_%s_%s", node1.ID, node2.ID)),
-						Name:        fmt.Sprintf("缃戞牸瀵硅: %s -> %s", node1.Name, node2.Name),
+						Name:        fmt.Sprintf("网格对角: %s -> %s", node1.Name, node2.Name),
 						Type:        "grid_diagonal",
 						Status:      "active",
 						StartNodeID: node1.ID,
@@ -437,9 +437,9 @@ func (s *pathGenerationService) GenerateGridPaths(ctx context.Context, connectDi
 	return paths, nil
 }
 
-// 宸ュ叿鍑芥暟
+// 工具函数
 
-// calculateDistance 璁＄畻涓ょ偣涔嬮棿鐨勬鍑犻噷寰楄窛绂?
+// calculateDistance 计算两点之间的欧几里得距�?
 func calculateDistance(pos1, pos2 domain.Position) float64 {
 	dx := pos1.X - pos2.X
 	dy := pos1.Y - pos2.Y
@@ -447,7 +447,7 @@ func calculateDistance(pos1, pos2 domain.Position) float64 {
 	return math.Sqrt(dx*dx + dy*dy + dz*dz)
 }
 
-// min 杩斿洖涓や釜鍙瘮杈冨€肩殑鏈€灏忓€?
+// min 返回两个可比较值的最小�?
 func min[T ~int | ~string](a, b T) T {
 	if a < b {
 		return a
@@ -455,7 +455,7 @@ func min[T ~int | ~string](a, b T) T {
 	return b
 }
 
-// max 杩斿洖涓や釜鍙瘮杈冨€肩殑鏈€澶у€?
+// max 返回两个可比较值的最大�?
 func max[T ~int | ~string](a, b T) T {
 	if a > b {
 		return a

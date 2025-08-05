@@ -1,4 +1,4 @@
-// Package web 鎻愪緵鍐呭祵鐨勫墠绔祫婧?
+// Package web 提供内嵌的前端资�?
 package web
 
 import (
@@ -9,13 +9,13 @@ import (
 //go:embed static/*
 var StaticFiles embed.FS
 
-// IndexHTML 涓婚〉闈TML
+// IndexHTML 主页面HTML
 var IndexHTML = []byte(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鏈哄櫒浜鸿矾寰勭紪杈戝櫒</title>
+    <title>机器人路径编辑器</title>
     <style>
         * {
             margin: 0;
@@ -114,43 +114,43 @@ var IndexHTML = []byte(`<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <div class="logo">馃</div>
-        <h1>鏈哄櫒浜鸿矾寰勭紪杈戝櫒</h1>
-        <p class="subtitle">鐜颁唬鍖栫殑涓夌鍏煎璺緞绠＄悊宸ュ叿</p>
+        <div class="logo">🤖</div>
+        <h1>机器人路径编辑器</h1>
+        <p class="subtitle">现代化的三端兼容路径管理工具</p>
         
-        <div class="status">鉁?鏈嶅姟杩愯涓?/div>
+        <div class="status">�?服务运行�?/div>
         
         <div class="features">
             <div class="feature">
-                <h3>馃搳 鍙鍖栫紪杈?/h3>
-                <p>鎷栨嫿寮忕敾甯冪紪杈戯紝鐩磋鐨勮妭鐐瑰拰璺緞绠＄悊</p>
+                <h3>📊 可视化编�?/h3>
+                <p>拖拽式画布编辑，直观的节点和路径管理</p>
             </div>
             <div class="feature">
-                <h3>馃梽锔?鏁版嵁搴撴敮鎸?/h3>
-                <p>鏀寔SQLite銆丮ySQL绛夊绉嶆暟鎹簱</p>
+                <h3>🗄�?数据库支�?/h3>
+                <p>支持SQLite、MySQL等多种数据库</p>
             </div>
             <div class="feature">
-                <h3>馃摫 涓夌鍏煎</h3>
-                <p>鏀寔Windows銆丩inux銆丄ndroid骞冲彴</p>
+                <h3>📱 三端兼容</h3>
+                <p>支持Windows、Linux、Android平台</p>
             </div>
             <div class="feature">
-                <h3>馃帹 鐜颁唬璁捐</h3>
-                <p>缇庤娴佺晠鐨勭幇浠ｅ寲鐣岄潰璁捐</p>
+                <h3>🎨 现代设计</h3>
+                <p>美观流畅的现代化界面设计</p>
             </div>
         </div>
         
         <div class="api-info">
-            <h3>API 绔偣</h3>
-            <p>RESTful API 鏈嶅姟宸插惎鍔紝鍙闂互涓嬬鐐癸細</p>
-            <div><code class="api-endpoint">GET /api/v1/nodes</code> - 鑾峰彇鑺傜偣鍒楄〃</div>
-            <div><code class="api-endpoint">GET /api/v1/paths</code> - 鑾峰彇璺緞鍒楄〃</div>
-            <div><code class="api-endpoint">GET /health</code> - 鍋ュ悍妫€鏌?/div>
-            <div><code class="api-endpoint">GET /metrics</code> - 绯荤粺鎸囨爣</div>
+            <h3>API 端点</h3>
+            <p>RESTful API 服务已启动，可访问以下端点：</p>
+            <div><code class="api-endpoint">GET /api/v1/nodes</code> - 获取节点列表</div>
+            <div><code class="api-endpoint">GET /api/v1/paths</code> - 获取路径列表</div>
+            <div><code class="api-endpoint">GET /health</code> - 健康检�?/div>
+            <div><code class="api-endpoint">GET /metrics</code> - 系统指标</div>
         </div>
     </div>
     
     <script>
-        // 绠€鍗曠殑API娴嬭瘯
+        // 简单的API测试
         fetch('/health')
             .then(response => response.json())
             .then(data => {
@@ -160,28 +160,28 @@ var IndexHTML = []byte(`<!DOCTYPE html>
                 console.error('Error:', error);
             });
             
-        // 瀹炴椂鐘舵€佹洿鏂?
+        // 实时状态更�?
         setInterval(() => {
             fetch('/health')
                 .then(response => {
                     if (response.ok) {
-                        document.querySelector('.status').textContent = '鉁?鏈嶅姟杩愯涓?;
+                        document.querySelector('.status').textContent = '�?服务运行�?;
                         document.querySelector('.status').style.background = '#2ecc71';
                     } else {
-                        document.querySelector('.status').textContent = '鉂?鏈嶅姟寮傚父';
+                        document.querySelector('.status').textContent = '�?服务异常';
                         document.querySelector('.status').style.background = '#e74c3c';
                     }
                 })
                 .catch(() => {
-                    document.querySelector('.status').textContent = '鉂?杩炴帴澶辫触';
+                    document.querySelector('.status').textContent = '�?连接失败';
                     document.querySelector('.status').style.background = '#e74c3c';
                 });
-        }, 10000); // 姣?0绉掓鏌ヤ竴娆?
+        }, 10000); // �?0秒检查一�?
     </script>
 </body>
 </html>`)
 
-// ServeStatic 鎻愪緵闈欐€佹枃浠舵湇鍔?
+// ServeStatic 提供静态文件服�?
 func ServeStatic() http.FileSystem {
 	return http.FS(StaticFiles)
 }

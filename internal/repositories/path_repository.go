@@ -1,4 +1,4 @@
-// Package repositories 璺緞浠撳偍瀹炵幇
+// Package repositories 路径仓储实现
 package repositories
 
 import (
@@ -11,29 +11,29 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// PathRepository 璺緞浠撳偍鎺ュ彛
+// PathRepository 路径仓储接口
 type PathRepository interface {
-	// 鍩虹CRUD鎿嶄綔
+	// 基础CRUD操作
 	Create(ctx context.Context, path *domain.Path) error
 	GetByID(ctx context.Context, id domain.PathID) (*domain.Path, error)
 	Update(ctx context.Context, path *domain.Path) error
 	Delete(ctx context.Context, id domain.PathID) error
 
-	// 鎵归噺鎿嶄綔
+	// 批量操作
 	CreateBatch(ctx context.Context, paths []*domain.Path) error
 	GetByIDs(ctx context.Context, ids []domain.PathID) ([]*domain.Path, error)
 
-	// 鏌ヨ鎿嶄綔
+	// 查询操作
 	List(ctx context.Context, options PathListOptions) ([]*domain.Path, error)
 	Count(ctx context.Context, filter PathFilter) (int64, error)
 
-	// 鍏崇郴鏌ヨ
+	// 关系查询
 	GetByNode(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error)
 	GetByNodes(ctx context.Context, startNodeID, endNodeID domain.NodeID) ([]*domain.Path, error)
 	GetConnectedPaths(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error)
 }
 
-// PathFilter 璺緞鏌ヨ杩囨护鍣?
+// PathFilter 路径查询过滤�?
 type PathFilter struct {
 	IDs         []domain.PathID      `json:"ids,omitempty"`
 	Name        string               `json:"name,omitempty"`
@@ -44,7 +44,7 @@ type PathFilter struct {
 	Direction   domain.PathDirection `json:"direction,omitempty"`
 }
 
-// PathListOptions 璺緞鍒楄〃鏌ヨ閫夐」
+// PathListOptions 路径列表查询选项
 type PathListOptions struct {
 	Filter   PathFilter `json:"filter"`
 	Page     int        `json:"page"`
@@ -53,44 +53,44 @@ type PathListOptions struct {
 	Order    string     `json:"order"`
 }
 
-// pathRepository 璺緞浠撳偍瀹炵幇
+// pathRepository 路径仓储实现
 type pathRepository struct {
 	db database.Database
 }
 
-// NewPathRepository 鍒涘缓璺緞浠撳偍瀹炰緥
+// NewPathRepository 创建路径仓储实例
 func NewPathRepository(db database.Database) PathRepository {
 	return &pathRepository{
 		db: db,
 	}
 }
 
-// Create 鍒涘缓璺緞
+// Create 创建路径
 func (r *pathRepository) Create(ctx context.Context, path *domain.Path) error {
 	if err := path.IsValid(); err != nil {
-		return fmt.Errorf("璺緞楠岃瘉澶辫触: %w", err)
+		return fmt.Errorf("路径验证失败: %w", err)
 	}
 
 	return r.db.GORMDB().WithContext(ctx).Create(path).Error
 }
 
-// GetByID 鏍规嵁ID鑾峰彇璺緞
+// GetByID 根据ID获取路径
 func (r *pathRepository) GetByID(ctx context.Context, id domain.PathID) (*domain.Path, error) {
 	var path domain.Path
 	err := r.db.GORMDB().WithContext(ctx).Where("id = ?", id).First(&path).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("璺緞涓嶅瓨鍦? %s", id)
+			return nil, fmt.Errorf("路径不存�? %s", id)
 		}
 		return nil, err
 	}
 	return &path, nil
 }
 
-// Update 鏇存柊璺緞
+// Update 更新路径
 func (r *pathRepository) Update(ctx context.Context, path *domain.Path) error {
 	if err := path.IsValid(); err != nil {
-		return fmt.Errorf("璺緞楠岃瘉澶辫触: %w", err)
+		return fmt.Errorf("路径验证失败: %w", err)
 	}
 
 	result := r.db.GORMDB().WithContext(ctx).Save(path)
@@ -99,13 +99,13 @@ func (r *pathRepository) Update(ctx context.Context, path *domain.Path) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("璺緞涓嶅瓨鍦? %s", path.ID)
+		return fmt.Errorf("路径不存�? %s", path.ID)
 	}
 
 	return nil
 }
 
-// Delete 鍒犻櫎璺緞
+// Delete 删除路径
 func (r *pathRepository) Delete(ctx context.Context, id domain.PathID) error {
 	result := r.db.GORMDB().WithContext(ctx).Delete(&domain.Path{}, "id = ?", id)
 	if result.Error != nil {
@@ -113,17 +113,17 @@ func (r *pathRepository) Delete(ctx context.Context, id domain.PathID) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("璺緞涓嶅瓨鍦? %s", id)
+		return fmt.Errorf("路径不存�? %s", id)
 	}
 
 	return nil
 }
 
-// CreateBatch 鎵归噺鍒涘缓璺緞
+// CreateBatch 批量创建路径
 func (r *pathRepository) CreateBatch(ctx context.Context, paths []*domain.Path) error {
 	for _, path := range paths {
 		if err := path.IsValid(); err != nil {
-			return fmt.Errorf("璺緞楠岃瘉澶辫触: %w", err)
+			return fmt.Errorf("路径验证失败: %w", err)
 		}
 	}
 
@@ -133,7 +133,7 @@ func (r *pathRepository) CreateBatch(ctx context.Context, paths []*domain.Path) 
 	})
 }
 
-// GetByIDs 鏍规嵁ID鍒楄〃鑾峰彇璺緞
+// GetByIDs 根据ID列表获取路径
 func (r *pathRepository) GetByIDs(ctx context.Context, ids []domain.PathID) ([]*domain.Path, error) {
 	var paths []*domain.Path
 
@@ -146,14 +146,14 @@ func (r *pathRepository) GetByIDs(ctx context.Context, ids []domain.PathID) ([]*
 	return paths, err
 }
 
-// List 鍒楄〃鏌ヨ璺緞
+// List 列表查询路径
 func (r *pathRepository) List(ctx context.Context, options PathListOptions) ([]*domain.Path, error) {
 	var paths []*domain.Path
 
 	query := r.db.GORMDB().WithContext(ctx)
 	query = r.applyPathFilter(query, options.Filter)
 
-	// 搴旂敤鎺掑簭
+	// 应用排序
 	if options.OrderBy != "" {
 		order := "asc"
 		if options.Order == "desc" {
@@ -164,7 +164,7 @@ func (r *pathRepository) List(ctx context.Context, options PathListOptions) ([]*
 		query = query.Order("created_at desc")
 	}
 
-	// 搴旂敤鍒嗛〉
+	// 应用分页
 	if options.PageSize > 0 {
 		offset := 0
 		if options.Page > 1 {
@@ -177,7 +177,7 @@ func (r *pathRepository) List(ctx context.Context, options PathListOptions) ([]*
 	return paths, err
 }
 
-// Count 缁熻璺緞鏁伴噺
+// Count 统计路径数量
 func (r *pathRepository) Count(ctx context.Context, filter PathFilter) (int64, error) {
 	var count int64
 
@@ -188,7 +188,7 @@ func (r *pathRepository) Count(ctx context.Context, filter PathFilter) (int64, e
 	return count, err
 }
 
-// GetByNode 鑾峰彇涓庢寚瀹氳妭鐐圭浉鍏崇殑鎵€鏈夎矾寰?
+// GetByNode 获取与指定节点相关的所有路�?
 func (r *pathRepository) GetByNode(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error) {
 	var paths []*domain.Path
 
@@ -200,7 +200,7 @@ func (r *pathRepository) GetByNode(ctx context.Context, nodeID domain.NodeID) ([
 	return paths, err
 }
 
-// GetByNodes 鑾峰彇杩炴帴涓や釜鑺傜偣鐨勮矾寰?
+// GetByNodes 获取连接两个节点的路�?
 func (r *pathRepository) GetByNodes(ctx context.Context, startNodeID, endNodeID domain.NodeID) ([]*domain.Path, error) {
 	var paths []*domain.Path
 
@@ -213,12 +213,12 @@ func (r *pathRepository) GetByNodes(ctx context.Context, startNodeID, endNodeID 
 	return paths, err
 }
 
-// GetConnectedPaths 鑾峰彇涓庢寚瀹氳妭鐐硅繛鎺ョ殑璺緞
+// GetConnectedPaths 获取与指定节点连接的路径
 func (r *pathRepository) GetConnectedPaths(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error) {
 	return r.GetByNode(ctx, nodeID)
 }
 
-// applyPathFilter 搴旂敤璺緞杩囨护鍣?
+// applyPathFilter 应用路径过滤�?
 func (r *pathRepository) applyPathFilter(query *gorm.DB, filter PathFilter) *gorm.DB {
 	if len(filter.IDs) > 0 {
 		stringIDs := make([]string, len(filter.IDs))

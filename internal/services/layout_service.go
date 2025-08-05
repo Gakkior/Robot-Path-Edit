@@ -1,4 +1,4 @@
-// Package services 甯冨眬鏈嶅姟瀹炵幇
+// Package services 布局服务实现
 package services
 
 import (
@@ -10,7 +10,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// LayoutService 甯冨眬鏈嶅姟鎺ュ彛
+// LayoutService 布局服务接口
 type LayoutService interface {
 	ArrangeNodes(ctx context.Context, algorithm string) (map[string]domain.Position, error)
 	ApplyGridLayout(nodes []domain.Node, spacing float64) []domain.Node
@@ -33,17 +33,17 @@ func NewLayoutService(nodeService NodeService, pathService PathService) LayoutSe
 }
 
 func (s *layoutService) ArrangeNodes(ctx context.Context, algorithm string) (map[string]domain.Position, error) {
-	// 绠€鍗曞疄鐜帮紝鍚庣画鍙互鎵╁睍
+	// 简单实现，后续可以扩展
 	return make(map[string]domain.Position), nil
 }
 
-// ApplyGridLayout 缃戞牸甯冨眬
+// ApplyGridLayout 网格布局
 func (s *layoutService) ApplyGridLayout(nodes []domain.Node, spacing float64) []domain.Node {
 	if len(nodes) == 0 {
 		return nodes
 	}
 
-	// 璁＄畻缃戞牸灏哄
+	// 计算网格尺寸
 	cols := int(math.Ceil(math.Sqrt(float64(len(nodes)))))
 
 	updatedNodes := make([]domain.Node, len(nodes))
@@ -60,24 +60,24 @@ func (s *layoutService) ApplyGridLayout(nodes []domain.Node, spacing float64) []
 	return updatedNodes
 }
 
-// ApplyForceDirectedLayout 鍔涘鍚戝竷灞€ (绠€鍖栫増Fruchterman-Reingold绠楁硶)
+// ApplyForceDirectedLayout 力导向布局 (简化版Fruchterman-Reingold算法)
 func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []domain.Path, iterations int) []domain.Node {
 	if len(nodes) == 0 {
 		return nodes
 	}
 
-	// 鏋勫缓閭绘帴鍏崇郴
+	// 构建邻接关系
 	adjacency := make(map[string][]string)
 	for _, path := range paths {
 		adjacency[string(path.StartNodeID)] = append(adjacency[string(path.StartNodeID)], string(path.EndNodeID))
 		adjacency[string(path.EndNodeID)] = append(adjacency[string(path.EndNodeID)], string(path.StartNodeID))
 	}
 
-	// 鍒濆鍖栧弬鏁?
+	// 初始化参�?
 	width, height := 1000.0, 800.0
-	k := math.Sqrt((width * height) / float64(len(nodes))) // 鐞嗘兂璺濈
+	k := math.Sqrt((width * height) / float64(len(nodes))) // 理想距离
 
-	// 闅忔満鍒濆浣嶇疆 (濡傛灉鑺傜偣浣嶇疆涓?)
+	// 随机初始位置 (如果节点位置�?)
 	updatedNodes := make([]domain.Node, len(nodes))
 	for i, node := range nodes {
 		updatedNode := node
@@ -88,16 +88,16 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 		updatedNodes[i] = updatedNode
 	}
 
-	// 杩唬璁＄畻鍔?
+	// 迭代计算�?
 	for iter := 0; iter < iterations; iter++ {
-		// 璁＄畻姣忎釜鑺傜偣鐨勫彈鍔?
+		// 计算每个节点的受�?
 		forces := make(map[string]struct{ fx, fy float64 })
 
 		for i := range updatedNodes {
 			forces[string(updatedNodes[i].ID)] = struct{ fx, fy float64 }{0, 0}
 		}
 
-		// 璁＄畻鎺掓枼鍔?(鎵€鏈夎妭鐐瑰涔嬮棿)
+		// 计算排斥�?(所有节点对之间)
 		for i := 0; i < len(updatedNodes); i++ {
 			for j := i + 1; j < len(updatedNodes); j++ {
 				node1, node2 := &updatedNodes[i], &updatedNodes[j]
@@ -106,10 +106,10 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 				distance := math.Sqrt(dx*dx + dy*dy)
 
 				if distance < 0.01 {
-					distance = 0.01 // 閬垮厤闄ら浂
+					distance = 0.01 // 避免除零
 				}
 
-				// 搴撲粦鎺掓枼鍔?
+				// 库仑排斥�?
 				repulsiveForce := k * k / distance
 				fx := repulsiveForce * dx / distance
 				fy := repulsiveForce * dy / distance
@@ -126,7 +126,7 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 			}
 		}
 
-		// 璁＄畻鍚稿紩鍔?(杩炴帴鐨勮妭鐐逛箣闂?
+		// 计算吸引�?(连接的节点之�?
 		for _, path := range paths {
 			var node1, node2 *domain.Node
 			for i := range updatedNodes {
@@ -144,7 +144,7 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 				distance := math.Sqrt(dx*dx + dy*dy)
 
 				if distance > 0.01 {
-					// 鑳″厠寮曞姏
+					// 胡克引力
 					attractiveForce := distance * distance / k
 					fx := attractiveForce * dx / distance
 					fy := attractiveForce * dy / distance
@@ -162,19 +162,19 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 			}
 		}
 
-		// 搴旂敤鍔涘苟鏇存柊浣嶇疆
-		temperature := 10.0 * (1.0 - float64(iter)/float64(iterations)) // 娓╁害閫掑噺
+		// 应用力并更新位置
+		temperature := 10.0 * (1.0 - float64(iter)/float64(iterations)) // 温度递减
 		for i := range updatedNodes {
 			force := forces[string(updatedNodes[i].ID)]
 
-			// 闄愬埗鏈€澶хЩ鍔ㄨ窛绂?
+			// 限制最大移动距�?
 			displacement := math.Min(math.Sqrt(force.fx*force.fx+force.fy*force.fy), temperature)
 			if displacement > 0.01 {
 				updatedNodes[i].Position.X += force.fx / displacement * temperature
 				updatedNodes[i].Position.Y += force.fy / displacement * temperature
 			}
 
-			// 淇濇寔鍦ㄧ敾甯冭寖鍥村唴
+			// 保持在画布范围内
 			updatedNodes[i].Position.X = math.Max(50, math.Min(width-50, updatedNodes[i].Position.X))
 			updatedNodes[i].Position.Y = math.Max(50, math.Min(height-50, updatedNodes[i].Position.Y))
 		}
@@ -183,7 +183,7 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 	return updatedNodes
 }
 
-// ApplyCircularLayout 鍦嗗舰甯冨眬
+// ApplyCircularLayout 圆形布局
 func (s *layoutService) ApplyCircularLayout(nodes []domain.Node, radius, centerX, centerY float64) []domain.Node {
 	if len(nodes) == 0 {
 		return nodes

@@ -1,5 +1,5 @@
-﻿// Konva 鐢诲竷鍒濆鍖栬剼鏈?
-console.log('鍔犺浇 Konva 鐢诲竷鑴氭湰');
+// Konva 画布初始化脚�?
+console.log('加载 Konva 画布脚本');
 
 const API_BASE = '/';
 
@@ -7,7 +7,7 @@ let stage, layer;
 const sidebar = document.getElementById('sidebar');
 let selectedPathId = null;
 
-// 鍛戒护妯″紡 - 鎾ら攢/閲嶅仛绯荤粺
+// 命令模式 - 撤销/重做系统
 class CommandManager {
   constructor() {
     this.history = [];
@@ -16,17 +16,17 @@ class CommandManager {
   }
 
   async executeCommand(command) {
-    // 娓呴櫎褰撳墠浣嶇疆涔嬪悗鐨勫巻鍙?
+    // 清除当前位置之后的历�?
     this.history = this.history.slice(0, this.currentIndex + 1);
     
-    // 鎵ц鍛戒护
+    // 执行命令
     await command.execute();
     
-    // 娣诲姞鍒板巻鍙?
+    // 添加到历�?
     this.history.push(command);
     this.currentIndex++;
     
-    // 闄愬埗鍘嗗彶闀垮害
+    // 限制历史长度
     if (this.history.length > this.maxHistory) {
       this.history.shift();
       this.currentIndex--;
@@ -62,7 +62,7 @@ class CommandManager {
   }
 
   updateUI() {
-    // 鏇存柊鎾ら攢/閲嶅仛鎸夐挳鐘舵€?
+    // 更新撤销/重做按钮状�?
     const undoBtn = document.getElementById('undoBtn');
     const redoBtn = document.getElementById('redoBtn');
     if (undoBtn) undoBtn.disabled = !this.canUndo();
@@ -72,7 +72,7 @@ class CommandManager {
 
 const commandManager = new CommandManager();
 
-// 绉诲姩鑺傜偣鍛戒护
+// 移动节点命令
 class MoveNodeCommand {
   constructor(nodeId, oldPosition, newPosition) {
     this.nodeId = nodeId;
@@ -94,12 +94,12 @@ class MoveNodeCommand {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(position)
     });
-    // 閲嶆柊鍔犺浇鐢诲竷鏁版嵁
+    // 重新加载画布数据
     await loadCanvasData();
   }
 }
 
-// 鍒涘缓璺緞鍛戒护
+// 创建路径命令
 class CreatePathCommand {
   constructor(pathData) {
     this.pathData = pathData;
@@ -125,7 +125,7 @@ class CreatePathCommand {
   }
 }
 
-// 鍒犻櫎璺緞鍛戒护
+// 删除路径命令
 class DeletePathCommand {
   constructor(pathId, pathData) {
     this.pathId = pathId;
@@ -152,7 +152,7 @@ const nodeForm = document.getElementById('nodeForm');
 
 async function fetchCanvasData() {
   const res = await fetch(API_BASE + 'canvas-data');
-  if (!res.ok) throw new Error('鑾峰彇鐢诲竷鏁版嵁澶辫触');
+  if (!res.ok) throw new Error('获取画布数据失败');
   return await res.json();
 }
 
@@ -186,7 +186,7 @@ nodeForm.addEventListener('submit', async (e) => {
 });
 
 async function createPath(startId, endId) {
-  const pathData = { name: '鏂拌矾寰?, start_node_id: startId, end_node_id: endId };
+  const pathData = { name: '新路�?, start_node_id: startId, end_node_id: endId };
   const command = new CreatePathCommand(pathData);
   await commandManager.executeCommand(command);
 }
@@ -208,7 +208,7 @@ function drawCanvas(data) {
   const nodeMap = {};
 let selectedNodeId = null;
 
-  // 缁樺埗鑺傜偣
+  // 绘制节点
   Object.values(data.nodes).forEach((n) => {
     const circle = new Konva.Circle({
       x: n.position.x,
@@ -265,9 +265,9 @@ let selectedNodeId = null;
     nodeMap[n.id] = { circle, text };
   });
 
-  // 缁樺埗璺緞
+  // 绘制路径
   function redrawPaths() {
-    // 娓呯悊鏃ц矾寰?
+    // 清理旧路�?
     layer.find('Line').forEach((l) => l.destroy());
 
     data.paths && Object.values(data.paths).forEach((p) => {
@@ -287,7 +287,7 @@ let selectedNodeId = null;
           selectedPathId = null;
           line.stroke('#34495e');
         } else {
-          // 鍙栨秷鍏朵粬閫変腑
+          // 取消其他选中
           layer.find('Line').forEach((l) => l.stroke('#34495e'));
           selectedPathId = p.id;
           line.stroke('#e74c3c');
@@ -318,11 +318,11 @@ async function loadCanvasData() {
     currentCanvasData = await fetchCanvasData();
     drawCanvas(currentCanvasData);
   } catch (err) {
-    console.error('鍔犺浇鐢诲竷鏁版嵁澶辫触:', err);
+    console.error('加载画布数据失败:', err);
   }
 }
 
-// 搴旂敤甯冨眬绠楁硶
+// 应用布局算法
 async function applyLayout(algorithm) {
   try {
     const response = await fetch(API_BASE + 'api/v1/layout/apply', {
@@ -332,25 +332,25 @@ async function applyLayout(algorithm) {
     });
     
     if (!response.ok) {
-      throw new Error('甯冨眬搴旂敤澶辫触');
+      throw new Error('布局应用失败');
     }
     
     const result = await response.json();
-    console.log('甯冨眬搴旂敤鎴愬姛:', result);
+    console.log('布局应用成功:', result);
     
-    // 閲嶆柊鍔犺浇鐢诲竷鏁版嵁
+    // 重新加载画布数据
     await loadCanvasData();
     
-    // 鏄剧ず鎴愬姛娑堟伅
-    showMessage(`${algorithm}甯冨眬搴旂敤鎴愬姛锛屽奖鍝嶄簡${result.affected_nodes}涓妭鐐筦, 'success');
+    // 显示成功消息
+    showMessage(`${algorithm}布局应用成功，影响了${result.affected_nodes}个节点`, 'success');
     
   } catch (error) {
-    console.error('搴旂敤甯冨眬澶辫触:', error);
-    showMessage('甯冨眬搴旂敤澶辫触: ' + error.message, 'error');
+    console.error('应用布局失败:', error);
+    showMessage('布局应用失败: ' + error.message, 'error');
   }
 }
 
-// 鐢熸垚璺緞
+// 生成路径
 async function generatePaths(algorithm, params) {
   try {
     const response = await fetch(API_BASE + `api/v1/path-generation/${algorithm}`, {
@@ -360,30 +360,30 @@ async function generatePaths(algorithm, params) {
     });
     
     if (!response.ok) {
-      throw new Error('璺緞鐢熸垚澶辫触');
+      throw new Error('路径生成失败');
     }
     
     const result = await response.json();
-    console.log('璺緞鐢熸垚鎴愬姛:', result);
+    console.log('路径生成成功:', result);
     
-    // 閲嶆柊鍔犺浇鐢诲竷鏁版嵁
+    // 重新加载画布数据
     await loadCanvasData();
     
-    // 鏄剧ず鎴愬姛娑堟伅
+    // 显示成功消息
     const algorithmNames = {
-      'nearest-neighbor': '鏈€杩戦偦',
-      'full-connectivity': '瀹屽叏杩為€?,
-      'grid': '缃戞牸'
+      'nearest-neighbor': '最近邻',
+      'full-connectivity': '完全连�?,
+      'grid': '网格'
     };
-    showMessage(`${algorithmNames[algorithm]}璺緞鐢熸垚鎴愬姛锛屽垱寤轰簡${result.created_paths}鏉¤矾寰刞, 'success');
+    showMessage(`${algorithmNames[algorithm]}路径生成成功，创建了${result.created_paths}条路径`, 'success');
     
   } catch (error) {
-    console.error('鐢熸垚璺緞澶辫触:', error);
-    showMessage('璺緞鐢熸垚澶辫触: ' + error.message, 'error');
+    console.error('生成路径失败:', error);
+    showMessage('路径生成失败: ' + error.message, 'error');
   }
 }
 
-// 鏄剧ず娑堟伅
+// 显示消息
 function showMessage(message, type) {
   const msgEl = document.createElement('div');
   msgEl.style.cssText = `
@@ -413,7 +413,7 @@ function showMessage(message, type) {
   try {
     await loadCanvasData();
     
-    // 鍒濆鍖栨挙閿€/閲嶅仛鎸夐挳浜嬩欢
+    // 初始化撤销/重做按钮事件
     const undoBtn = document.getElementById('undoBtn');
     const redoBtn = document.getElementById('redoBtn');
     
@@ -429,7 +429,7 @@ function showMessage(message, type) {
       });
     }
     
-    // 鍒濆鍖栧竷灞€鎸夐挳浜嬩欢
+    // 初始化布局按钮事件
     const gridLayoutBtn = document.getElementById('gridLayoutBtn');
     const forceLayoutBtn = document.getElementById('forceLayoutBtn');
     const circularLayoutBtn = document.getElementById('circularLayoutBtn');
@@ -446,7 +446,7 @@ function showMessage(message, type) {
       circularLayoutBtn.addEventListener('click', () => applyLayout('circular'));
     }
 
-    // 鍒濆鍖栬矾寰勭敓鎴愭寜閽簨浠?
+    // 初始化路径生成按钮事�?
     const nearestPathBtn = document.getElementById('nearestPathBtn');
     const fullConnectBtn = document.getElementById('fullConnectBtn');
     const gridPathBtn = document.getElementById('gridPathBtn');
@@ -463,7 +463,7 @@ function showMessage(message, type) {
       gridPathBtn.addEventListener('click', () => generatePaths('grid', { connect_diagonal: false }));
     }
     
-    // 鍒濆鍖栨寜閽姸鎬?
+    // 初始化按钮状�?
     commandManager.updateUI();
     
   } catch (err) {
@@ -471,12 +471,12 @@ function showMessage(message, type) {
   }
 })();
 
-// 蹇嵎閿鐞?
+// 快捷键处�?
 window.addEventListener('keydown', async (e) => {
-  // 鍒犻櫎閫変腑璺緞
+  // 删除选中路径
   if (e.key === 'Delete' && selectedPathId) {
-    if (confirm('纭畾鍒犻櫎鎵€閫夎矾寰?')) {
-      // 鑾峰彇璺緞鏁版嵁鐢ㄤ簬鎾ら攢
+    if (confirm('确定删除所选路�?')) {
+      // 获取路径数据用于撤销
       const pathData = currentCanvasData.paths[selectedPathId];
       if (pathData) {
         const command = new DeletePathCommand(selectedPathId, pathData);
@@ -486,13 +486,13 @@ window.addEventListener('keydown', async (e) => {
     }
   }
   
-  // 鎾ら攢 (Ctrl+Z)
+  // 撤销 (Ctrl+Z)
   if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
     e.preventDefault();
     await commandManager.undo();
   }
   
-  // 閲嶅仛 (Ctrl+Shift+Z 鎴?Ctrl+Y)
+  // 重做 (Ctrl+Shift+Z �?Ctrl+Y)
   if ((e.ctrlKey && e.shiftKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) {
     e.preventDefault();
     await commandManager.redo();

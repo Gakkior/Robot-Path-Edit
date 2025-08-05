@@ -1,14 +1,14 @@
-﻿// Package main 鏄簲鐢ㄧ▼搴忕殑鍏ュ彛鐐?
+// Package main 是应用程序的入口�?
 //
-// 鏋舵瀯璁捐鍙傝€冿細
-// - Kubernetes API Server鐨勫惎鍔ㄦā寮?
-// - Grafana Server鐨勯厤缃鐞?
-// - Docker鐨勫懡浠よ鎺ュ彛璁捐
+// 架构设计参考：
+// - Kubernetes API Server的启动模�?
+// - Grafana Server的配置管�?
+// - Docker的命令行接口设计
 //
-// 璁捐鐞嗗康锛?
-// 1. 鍗曚竴鑱岃矗锛歮ain鍑芥暟鍙礋璐ｅ惎鍔紝涓嶅寘鍚笟鍔￠€昏緫
-// 2. 閰嶇疆椹卞姩锛氶€氳繃閰嶇疆鏂囦欢鍜岀幆澧冨彉閲忔帶鍒惰涓?
-// 3. 浼橀泤鍚仠锛氭敮鎸佷俊鍙峰鐞嗗拰璧勬簮娓呯悊
+// 设计理念�?
+// 1. 单一职责：main函数只负责启动，不包含业务逻辑
+// 2. 配置驱动：通过配置文件和环境变量控制行�?
+// 3. 优雅启停：支持信号处理和资源清理
 package main
 
 import (
@@ -29,47 +29,47 @@ import (
 )
 
 var (
-	// 鐗堟湰淇℃伅锛屾瀯寤烘椂娉ㄥ叆
+	// 版本信息，构建时注入
 	version   = "dev"
 	buildTime = "unknown"
 	gitHash   = "unknown"
 )
 
 func main() {
-	// 鍒涘缓鏍瑰懡浠?- 鍙傝€僰ubectl鐨勫懡浠ょ粨鏋?
+	// 创建根命�?- 参考kubectl的命令结�?
 	rootCmd := &cobra.Command{
 		Use:     "robot-path-editor",
-		Short:   "鏈哄櫒浜鸿矾寰勭紪杈戝櫒 - 閫氱敤鐨勭偣浣嶅拰璺緞绠＄悊宸ュ叿",
-		Long:    `涓€涓幇浠ｅ寲鐨勪笁绔吋瀹规満鍣ㄤ汉璺緞缂栬緫鍣紝鏀寔鍙鍖栫紪杈戝拰鏁版嵁搴撶鐞嗐€俙,
+		Short:   "机器人路径编辑器 - 通用的点位和路径管理工具",
+		Long:    `一个现代化的三端兼容机器人路径编辑器，支持可视化编辑和数据库管理。`,
 		Version: fmt.Sprintf("%s (built: %s, commit: %s)", version, buildTime, gitHash),
 		RunE:    runServer,
 	}
 
-	// 娣诲姞鍛戒护琛屽弬鏁?- 鍙傝€僄rafana鐨勯厤缃€夐」
-	rootCmd.PersistentFlags().String("config", "", "閰嶇疆鏂囦欢璺緞")
-	rootCmd.PersistentFlags().String("log-level", "info", "鏃ュ織绾у埆 (debug, info, warn, error)")
-	rootCmd.PersistentFlags().String("addr", ":8080", "鏈嶅姟鐩戝惉鍦板潃")
-	rootCmd.PersistentFlags().String("db-type", "sqlite", "鏁版嵁搴撶被鍨?(sqlite, mysql)")
-	rootCmd.PersistentFlags().String("db-dsn", "./data/app.db", "鏁版嵁搴撹繛鎺ュ瓧绗︿覆")
+	// 添加命令行参�?- 参考Grafana的配置选项
+	rootCmd.PersistentFlags().String("config", "", "配置文件路径")
+	rootCmd.PersistentFlags().String("log-level", "info", "日志级别 (debug, info, warn, error)")
+	rootCmd.PersistentFlags().String("addr", ":8080", "服务监听地址")
+	rootCmd.PersistentFlags().String("db-type", "sqlite", "数据库类�?(sqlite, mysql)")
+	rootCmd.PersistentFlags().String("db-dsn", "./data/app.db", "数据库连接字符串")
 
-	// 缁戝畾鍙傛暟鍒皏iper - 鍙傝€僈ubernetes鐨勯厤缃鐞?
+	// 绑定参数到viper - 参考Kubernetes的配置管�?
 	viper.BindPFlags(rootCmd.PersistentFlags())
 
 	if err := rootCmd.Execute(); err != nil {
-		logrus.WithError(err).Fatal("搴旂敤鍚姩澶辫触")
+		logrus.WithError(err).Fatal("应用启动失败")
 	}
 }
 
-// runServer 鍚姩鏈嶅姟鍣?
-// 鍙傝€僄rafana Server鐨勫惎鍔ㄦ祦绋?
+// runServer 启动服务�?
+// 参考Grafana Server的启动流�?
 func runServer(cmd *cobra.Command, args []string) error {
-	// 1. 鍔犺浇閰嶇疆
+	// 1. 加载配置
 	cfg, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("鍔犺浇閰嶇疆澶辫触: %w", err)
+		return fmt.Errorf("加载配置失败: %w", err)
 	}
 
-	// 2. 鍒濆鍖栨棩蹇?- 鍙傝€僈ubernetes鐨勭粨鏋勫寲鏃ュ織
+	// 2. 初始化日�?- 参考Kubernetes的结构化日志
 	logger.Init(cfg.Logger)
 
 	log := logrus.WithFields(logrus.Fields{
@@ -78,49 +78,49 @@ func runServer(cmd *cobra.Command, args []string) error {
 		"git_hash":   gitHash,
 	})
 
-	log.Info("鏈哄櫒浜鸿矾寰勭紪杈戝櫒鍚姩涓?..")
+	log.Info("机器人路径编辑器启动�?..")
 
-	// 3. 鍒涘缓搴旂敤瀹炰緥 - 渚濊禆娉ㄥ叆妯″紡锛屽弬鑰僓ber FX
+	// 3. 创建应用实例 - 依赖注入模式，参考Uber FX
 	application, err := app.New(cfg)
 	if err != nil {
-		return fmt.Errorf("鍒涘缓搴旂敤瀹炰緥澶辫触: %w", err)
+		return fmt.Errorf("创建应用实例失败: %w", err)
 	}
 
-	// 4. 璁剧疆淇″彿澶勭悊 - 鍙傝€僁ocker鐨勪紭闆呭仠鏈?
+	// 4. 设置信号处理 - 参考Docker的优雅停�?
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 鐩戝惉绯荤粺淇″彿
+	// 监听系统信号
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// 5. 鍚姩搴旂敤
+	// 5. 启动应用
 	go func() {
 		if err := application.Start(ctx); err != nil {
-			log.WithError(err).Error("搴旂敤鍚姩澶辫触")
+			log.WithError(err).Error("应用启动失败")
 			cancel()
 		}
 	}()
 
-	log.WithField("addr", cfg.Server.Addr).Info("鏈嶅姟鍣ㄥ惎鍔ㄦ垚鍔?)
+	log.WithField("addr", cfg.Server.Addr).Info("服务器启动成�?)
 
-	// 6. 绛夊緟鍋滄淇″彿
+	// 6. 等待停止信号
 	select {
 	case sig := <-sigChan:
-		log.WithField("signal", sig).Info("鏀跺埌鍋滄淇″彿锛屽紑濮嬩紭闆呭叧闂?..")
+		log.WithField("signal", sig).Info("收到停止信号，开始优雅关�?..")
 	case <-ctx.Done():
-		log.Info("搴旂敤涓婁笅鏂囪鍙栨秷")
+		log.Info("应用上下文被取消")
 	}
 
-	// 7. 浼橀泤鍏抽棴 - 鍙傝€僈ubernetes鐨勪紭闆呯粓姝?
+	// 7. 优雅关闭 - 参考Kubernetes的优雅终�?
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 
 	if err := application.Stop(shutdownCtx); err != nil {
-		log.WithError(err).Error("搴旂敤鍏抽棴鏃跺彂鐢熼敊璇?)
+		log.WithError(err).Error("应用关闭时发生错�?)
 		return err
 	}
 
-	log.Info("搴旂敤宸叉垚鍔熷叧闂?)
+	log.Info("应用已成功关�?)
 	return nil
 }

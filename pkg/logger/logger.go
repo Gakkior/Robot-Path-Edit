@@ -1,14 +1,14 @@
-﻿// Package logger 鎻愪緵缁熶竴鐨勬棩蹇楃鐞嗗姛鑳?
+// Package logger 提供统一的日志管理功�?
 //
-// 璁捐鍙傝€冿細
-// - Kubernetes鐨勭粨鏋勫寲鏃ュ織绯荤粺
-// - Grafana鐨勬棩蹇楃鐞?
-// - Prometheus鐨勬棩蹇楄鑼?
+// 设计参考：
+// - Kubernetes的结构化日志系统
+// - Grafana的日志管�?
+// - Prometheus的日志规�?
 //
-// 鐗圭偣锛?
-// 1. 缁撴瀯鍖栨棩蹇楋細鏀寔JSON鍜屾枃鏈牸寮?
-// 2. 鏃ュ織杞浆锛氭敮鎸佹枃浠跺ぇ灏忓拰鏃堕棿杞浆
-// 3. 涓婁笅鏂囨劅鐭ワ細鏀寔閾捐矾杩借釜
+// 特点�?
+// 1. 结构化日志：支持JSON和文本格�?
+// 2. 日志轮转：支持文件大小和时间轮转
+// 3. 上下文感知：支持链路追踪
 package logger
 
 import (
@@ -21,21 +21,21 @@ import (
 	"robot-path-editor/internal/config"
 )
 
-// Init 鍒濆鍖栨棩蹇楃郴缁?
-// 鍙傝€僈ubernetes鐨勬棩蹇楀垵濮嬪寲娴佺▼
+// Init 初始化日志系�?
+// 参考Kubernetes的日志初始化流程
 func Init(cfg config.LoggerConfig) {
-	// 璁剧疆鏃ュ織绾у埆
+	// 设置日志级别
 	level, err := logrus.ParseLevel(cfg.Level)
 	if err != nil {
-		logrus.WithError(err).Warn("瑙ｆ瀽鏃ュ織绾у埆澶辫触锛屼娇鐢ㄩ粯璁ょ骇鍒?info")
+		logrus.WithError(err).Warn("解析日志级别失败，使用默认级�?info")
 		level = logrus.InfoLevel
 	}
 	logrus.SetLevel(level)
 
-	// 璁剧疆鏃ュ織鏍煎紡
+	// 设置日志格式
 	switch strings.ToLower(cfg.Format) {
 	case "json":
-		// JSON鏍煎紡 - 閫傚悎鐢熶骇鐜鍜屾棩蹇楁敹闆嗙郴缁?
+		// JSON格式 - 适合生产环境和日志收集系�?
 		logrus.SetFormatter(&logrus.JSONFormatter{
 			TimestampFormat: "2006-01-02T15:04:05.000Z07:00",
 			FieldMap: logrus.FieldMap{
@@ -46,7 +46,7 @@ func Init(cfg config.LoggerConfig) {
 			},
 		})
 	default:
-		// 鏂囨湰鏍煎紡 - 閫傚悎寮€鍙戠幆澧?
+		// 文本格式 - 适合开发环�?
 		logrus.SetFormatter(&logrus.TextFormatter{
 			FullTimestamp:   true,
 			TimestampFormat: "2006-01-02 15:04:05",
@@ -54,40 +54,40 @@ func Init(cfg config.LoggerConfig) {
 		})
 	}
 
-	// 璁剧疆杈撳嚭鐩爣
+	// 设置输出目标
 	switch strings.ToLower(cfg.Output) {
 	case "file":
 		if cfg.File == "" {
-			logrus.Warn("鏃ュ織鏂囦欢璺緞涓虹┖锛屼娇鐢ㄩ粯璁よ矾寰?)
+			logrus.Warn("日志文件路径为空，使用默认路�?)
 			cfg.File = "./logs/app.log"
 		}
 
-		// 纭繚鏃ュ織鐩綍瀛樺湪
+		// 确保日志目录存在
 		logDir := filepath.Dir(cfg.File)
 		if err := os.MkdirAll(logDir, 0755); err != nil {
-			logrus.WithError(err).Error("鍒涘缓鏃ュ織鐩綍澶辫触")
+			logrus.WithError(err).Error("创建日志目录失败")
 			return
 		}
 
-		// 鎵撳紑鏃ュ織鏂囦欢
+		// 打开日志文件
 		file, err := os.OpenFile(cfg.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			logrus.WithError(err).Error("鎵撳紑鏃ュ織鏂囦欢澶辫触")
+			logrus.WithError(err).Error("打开日志文件失败")
 			return
 		}
 
 		logrus.SetOutput(file)
 	default:
-		// 榛樿杈撳嚭鍒版爣鍑嗚緭鍑?
+		// 默认输出到标准输�?
 		logrus.SetOutput(os.Stdout)
 	}
 
-	// 璁剧疆璋冪敤鑰呬俊鎭姤鍛?
+	// 设置调用者信息报�?
 	logrus.SetReportCaller(true)
 
 	logrus.WithFields(logrus.Fields{
 		"level":  cfg.Level,
 		"format": cfg.Format,
 		"output": cfg.Output,
-	}).Info("鏃ュ織绯荤粺鍒濆鍖栧畬鎴?)
+	}).Info("日志系统初始化完�?)
 }

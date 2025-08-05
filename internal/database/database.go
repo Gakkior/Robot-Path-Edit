@@ -1,15 +1,15 @@
-// Package database 鎻愪緵鏁版嵁搴撹闂殑鎶借薄灞?
+// Package database 提供数据库访问的抽象�?
 //
-// 璁捐鍙傝€冿細
-// - GORM鐨勬暟鎹簱鎶借薄璁捐
-// - Kubernetes鐨勫瓨鍌ㄦ娊璞″眰
-// - Docker鐨勫瓨鍌ㄩ┍鍔ㄦā寮?
+// 设计参考：
+// - GORM的数据库抽象设计
+// - Kubernetes的存储抽象层
+// - Docker的存储驱动模�?
 //
-// 鐗圭偣锛?
-// 1. 鏁版嵁搴撴棤鍏筹細鏀寔澶氱鏁版嵁搴撶被鍨?
-// 2. 杩炴帴姹犵鐞嗭細鑷姩绠＄悊杩炴帴鐢熷懡鍛ㄦ湡
-// 3. 浜嬪姟鏀寔锛氭敮鎸佷簨鍔℃搷浣?
-// 4. 杩佺Щ绠＄悊锛氳嚜鍔ㄥ寲鏁版嵁搴撶粨鏋勮縼绉?
+// 特点�?
+// 1. 数据库无关：支持多种数据库类�?
+// 2. 连接池管理：自动管理连接生命周期
+// 3. 事务支持：支持事务操�?
+// 4. 迁移管理：自动化数据库结构迁�?
 package database
 
 import (
@@ -25,71 +25,71 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// Database 鏁版嵁搴撴帴鍙ｆ娊璞?
-// 鎻愪緵缁熶竴鐨勬暟鎹簱璁块棶鎺ュ彛锛屾敮鎸佷笉鍚岀殑鏁版嵁搴撳疄鐜?
+// Database 数据库接口抽�?
+// 提供统一的数据库访问接口，支持不同的数据库实�?
 type Database interface {
-	// 鍩虹鎿嶄綔
-	DB() interface{}  // 淇敼涓篿nterface{}浠ユ敮鎸佷笉鍚岀殑鏁版嵁搴撳疄鐜?
-	GORMDB() *gorm.DB // 娣诲姞GORM鐗瑰畾鐨勮闂柟娉?
+	// 基础操作
+	DB() interface{}  // 修改为interface{}以支持不同的数据库实�?
+	GORMDB() *gorm.DB // 添加GORM特定的�闖��?
 	Close() error
 
-	// 鍋ュ悍妫€鏌?
+	// 健康检�?
 	Ping(ctx context.Context) error
 
-	// 浜嬪姟鎿嶄綔
+	// 事务操作
 	Transaction(ctx context.Context, fn func(tx interface{}) error) error
 
-	// 杩佺Щ鎿嶄綔
+	// 迁移操作
 	AutoMigrate() error
 }
 
-// database 鏁版嵁搴撳疄鐜?
+// database 数据库实�?
 type database struct {
 	db     *gorm.DB
 	config config.DatabaseConfig
 }
 
-// New 鍒涘缓鏁版嵁搴撳疄渚?
-// 鏍规嵁閰嶇疆绫诲瀷鑷姩閫夋嫨瀵瑰簲鐨勬暟鎹簱椹卞姩
+// New 创建数据库实�?
+// 根据配置类型自动选择对应的数据库驱动
 func New(cfg config.DatabaseConfig) (Database, error) {
-	// 濡傛灉鏄疭QLite锛屼娇鐢ㄥ唴瀛樻暟鎹簱浣滀负鍚庡鏂规
+	// 如果是SQLite，使用内存数据库作为后备方案
 	if cfg.Type == "sqlite" {
-		fmt.Printf("淇℃伅: 浣跨敤鍐呭瓨鏁版嵁搴撴ā寮廫n")
+		fmt.Printf("信息: 使用内存数据库模式\n")
 		return NewMemoryDatabaseFromConfig(cfg)
 	}
 
 	var dialector gorm.Dialector
 
-	// 鏍规嵁鏁版嵁搴撶被鍨嬮€夋嫨椹卞姩 - 閫傞厤鍣ㄦā寮?
+	// 根据数据库类型选择驱动 - 适配器模�?
 	switch cfg.Type {
 	case "mysql":
 		dialector = mysql.Open(cfg.DSN)
 	default:
-		return nil, fmt.Errorf("涓嶆敮鎸佺殑鏁版嵁搴撶被鍨? %s", cfg.Type)
+		return nil, fmt.Errorf("不支持的数据库类�? %s", cfg.Type)
 	}
 
-	// GORM閰嶇疆 - 鍙傝€冩渶浣冲疄璺?
+	// GORM配置 - 参考最佳实�?
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent), // 浣跨敤鑷畾涔夋棩蹇?
+		Logger: logger.Default.LogMode(logger.Silent), // 使用自定义日�?
 		NowFunc: func() time.Time {
-			return time.Now().UTC() // 缁熶竴浣跨敤UTC鏃堕棿
+			return time.Now().UTC() // 统一使用UTC时间
 		},
-		DisableForeignKeyConstraintWhenMigrating: true, // 鏀寔SQLite
+		DisableForeignKeyConstraintWhenMigrating: true, // 支持SQLite
 	}
 
-	// 寤虹珛鏁版嵁搴撹繛鎺?
+	// 建立数据库连�?
 	db, err := gorm.Open(dialector, gormConfig)
 	if err != nil {
-		return nil, fmt.Errorf("杩炴帴鏁版嵁搴撳け璐? %w", err)
+		return nil, fmt.Errorf("连接数据库失�? %w", err)
 	}
 
-	// 鑾峰彇搴曞眰SQL DB瀹炰緥杩涜杩炴帴姹犻厤缃?
+	// 获取底层SQL DB实例进行连接池配�?
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇SQL DB瀹炰緥澶辫触: %w", err)
+		return nil, fmt.Errorf("获取SQL DB实例失败: %w", err)
 	}
 
-	// 閰嶇疆杩炴帴姹?- 鍙傝€冩暟鎹簱杩炴帴姹犳渶浣冲疄璺?
+	// 配置连接�?- 参考数据库连接池最佳实�?
 	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
 	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(cfg.ConnMaxLifetime)
@@ -99,27 +99,27 @@ func New(cfg config.DatabaseConfig) (Database, error) {
 		config: cfg,
 	}
 
-	// 鑷姩杩佺Щ鏁版嵁搴撶粨鏋?
+	// 自动迁移数据库结�?
 	if cfg.AutoMigrate {
 		if err := instance.AutoMigrate(); err != nil {
-			return nil, fmt.Errorf("鏁版嵁搴撹縼绉诲け璐? %w", err)
+			return nil, fmt.Errorf("数据库迁移失�? %w", err)
 		}
 	}
 
 	return instance, nil
 }
 
-// DB 杩斿洖GORM鏁版嵁搴撳疄渚?
+// DB 返回GORM数据库实�?
 func (d *database) DB() interface{} {
 	return d.db
 }
 
-// GORMDB 杩斿洖GORM鏁版嵁搴撳疄渚?
+// GORMDB 返回GORM数据库实�?
 func (d *database) GORMDB() *gorm.DB {
 	return d.db
 }
 
-// Close 鍏抽棴鏁版嵁搴撹繛鎺?
+// Close 关闭数据库连�?
 func (d *database) Close() error {
 	sqlDB, err := d.db.DB()
 	if err != nil {
@@ -128,7 +128,7 @@ func (d *database) Close() error {
 	return sqlDB.Close()
 }
 
-// Ping 妫€鏌ユ暟鎹簱杩炴帴鐘舵€?
+// Ping 检查数据库连接状�?
 func (d *database) Ping(ctx context.Context) error {
 	sqlDB, err := d.db.DB()
 	if err != nil {
@@ -137,18 +137,18 @@ func (d *database) Ping(ctx context.Context) error {
 	return sqlDB.PingContext(ctx)
 }
 
-// Transaction 鎵ц浜嬪姟鎿嶄綔
-// 鍙傝€僄ORM鐨勪簨鍔℃渶浣冲疄璺?
+// Transaction 执行事务操作
+// 参考GORM的事务最佳实�?
 func (d *database) Transaction(ctx context.Context, fn func(tx interface{}) error) error {
 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return fn(tx)
 	})
 }
 
-// AutoMigrate 鑷姩杩佺Щ鏁版嵁搴撶粨鏋?
-// 鍙傝€僈ubernetes鐨勫０鏄庡紡璧勬簮绠＄悊
+// AutoMigrate 自动迁移数据库结�?
+// 参考Kubernetes的声明式资源管理
 func (d *database) AutoMigrate() error {
-	// 瀹氫箟闇€瑕佽縼绉荤殑妯″瀷
+	// 定义需要迁移的模型
 	models := []interface{}{
 		&domain.Node{},
 		&domain.Path{},
@@ -156,10 +156,10 @@ func (d *database) AutoMigrate() error {
 		&domain.TableMapping{},
 	}
 
-	// 鎵ц杩佺Щ
+	// 执行迁移
 	for _, model := range models {
 		if err := d.db.AutoMigrate(model); err != nil {
-			return fmt.Errorf("杩佺Щ妯″瀷 %T 澶辫触: %w", model, err)
+			return fmt.Errorf("迁移模型 %T 失败: %w", model, err)
 		}
 	}
 

@@ -1,4 +1,4 @@
-// Package services 璺緞鏈嶅姟瀹炵幇
+// Package services 路径服务实现
 package services
 
 import (
@@ -9,7 +9,7 @@ import (
 	"robot-path-editor/internal/repositories"
 )
 
-// PathService 璺緞鏈嶅姟鎺ュ彛
+// PathService 路径服务接口
 type PathService interface {
 	CreatePath(ctx context.Context, req CreatePathRequest) (*domain.Path, error)
 	GetPath(ctx context.Context, id domain.PathID) (*domain.Path, error)
@@ -20,7 +20,7 @@ type PathService interface {
 	GetPathsByNode(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error)
 }
 
-// CreatePathRequest 鍒涘缓璺緞璇锋眰
+// CreatePathRequest 创建路径请求
 type CreatePathRequest struct {
 	Name        string                 `json:"name" binding:"required"`
 	Type        domain.PathType        `json:"type"`
@@ -31,7 +31,7 @@ type CreatePathRequest struct {
 	Properties  map[string]interface{} `json:"properties,omitempty"`
 }
 
-// UpdatePathRequest 鏇存柊璺緞璇锋眰
+// UpdatePathRequest 更新路径请求
 type UpdatePathRequest struct {
 	ID         domain.PathID          `json:"id" binding:"required"`
 	Name       *string                `json:"name,omitempty"`
@@ -42,7 +42,7 @@ type UpdatePathRequest struct {
 	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
-// GetPathsRequest 鑾峰彇璺緞鍒楄〃璇锋眰
+// GetPathsRequest 获取路径列表请求
 type GetPathsRequest struct {
 	Filter   repositories.PathFilter `json:"filter"`
 	Page     int                     `json:"page"`
@@ -51,7 +51,7 @@ type GetPathsRequest struct {
 	Order    string                  `json:"order"`
 }
 
-// GetPathsResponse 鑾峰彇璺緞鍒楄〃鍝嶅簲
+// GetPathsResponse 获取路径列表响应
 type GetPathsResponse struct {
 	Paths      []*domain.Path `json:"paths"`
 	Total      int64          `json:"total"`
@@ -60,13 +60,13 @@ type GetPathsResponse struct {
 	TotalPages int            `json:"total_pages"`
 }
 
-// pathService 璺緞鏈嶅姟瀹炵幇
+// pathService 路径服务实现
 type pathService struct {
 	pathRepo repositories.PathRepository
 	nodeRepo repositories.NodeRepository
 }
 
-// NewPathService 鍒涘缓璺緞鏈嶅姟瀹炰緥
+// NewPathService 创建路径服务实例
 func NewPathService(pathRepo repositories.PathRepository, nodeRepo repositories.NodeRepository) PathService {
 	return &pathService{
 		pathRepo: pathRepo,
@@ -74,18 +74,18 @@ func NewPathService(pathRepo repositories.PathRepository, nodeRepo repositories.
 	}
 }
 
-// CreatePath 鍒涘缓璺緞
+// CreatePath 创建路径
 func (s *pathService) CreatePath(ctx context.Context, req CreatePathRequest) (*domain.Path, error) {
-	// 楠岃瘉璧峰鍜岀粨鏉熻妭鐐瑰瓨鍦?
+	// 验证起始和结束节点存�?
 	if _, err := s.nodeRepo.GetByID(ctx, req.StartNodeID); err != nil {
-		return nil, fmt.Errorf("璧峰鑺傜偣涓嶅瓨鍦? %w", err)
+		return nil, fmt.Errorf("起始节点不存�? %w", err)
 	}
 
 	if _, err := s.nodeRepo.GetByID(ctx, req.EndNodeID); err != nil {
-		return nil, fmt.Errorf("缁撴潫鑺傜偣涓嶅瓨鍦? %w", err)
+		return nil, fmt.Errorf("结束节点不存�? %w", err)
 	}
 
-	// 鍒涘缓璺緞瀹炰綋
+	// 创建路径实体
 	path := domain.NewPath(req.Name, req.StartNodeID, req.EndNodeID)
 
 	if req.Type != "" {
@@ -101,24 +101,24 @@ func (s *pathService) CreatePath(ctx context.Context, req CreatePathRequest) (*d
 		path.Properties = req.Properties
 	}
 
-	// 鎸佷箙鍖?
+	// 持久�?
 	if err := s.pathRepo.Create(ctx, path); err != nil {
-		return nil, fmt.Errorf("鍒涘缓璺緞澶辫触: %w", err)
+		return nil, fmt.Errorf("创建路径失败: %w", err)
 	}
 
 	return path, nil
 }
 
-// GetPath 鑾峰彇璺緞
+// GetPath 获取路径
 func (s *pathService) GetPath(ctx context.Context, id domain.PathID) (*domain.Path, error) {
 	return s.pathRepo.GetByID(ctx, id)
 }
 
-// UpdatePath 鏇存柊璺緞
+// UpdatePath 更新路径
 func (s *pathService) UpdatePath(ctx context.Context, req UpdatePathRequest) (*domain.Path, error) {
 	path, err := s.pathRepo.GetByID(ctx, req.ID)
 	if err != nil {
-		return nil, fmt.Errorf("璺緞涓嶅瓨鍦? %w", err)
+		return nil, fmt.Errorf("路径不存�? %w", err)
 	}
 
 	if req.Name != nil {
@@ -141,18 +141,18 @@ func (s *pathService) UpdatePath(ctx context.Context, req UpdatePathRequest) (*d
 	}
 
 	if err := s.pathRepo.Update(ctx, path); err != nil {
-		return nil, fmt.Errorf("鏇存柊璺緞澶辫触: %w", err)
+		return nil, fmt.Errorf("更新路径失败: %w", err)
 	}
 
 	return path, nil
 }
 
-// DeletePath 鍒犻櫎璺緞
+// DeletePath 删除路径
 func (s *pathService) DeletePath(ctx context.Context, id domain.PathID) error {
 	return s.pathRepo.Delete(ctx, id)
 }
 
-// GetPaths 鑾峰彇璺緞鍒楄〃
+// GetPaths 获取路径列表
 func (s *pathService) GetPaths(ctx context.Context, req GetPathsRequest) (*GetPathsResponse, error) {
 	if req.PageSize <= 0 {
 		req.PageSize = 20
@@ -171,12 +171,12 @@ func (s *pathService) GetPaths(ctx context.Context, req GetPathsRequest) (*GetPa
 
 	paths, err := s.pathRepo.List(ctx, options)
 	if err != nil {
-		return nil, fmt.Errorf("鏌ヨ璺緞鍒楄〃澶辫触: %w", err)
+		return nil, fmt.Errorf("查询路径列表失败: %w", err)
 	}
 
 	total, err := s.pathRepo.Count(ctx, req.Filter)
 	if err != nil {
-		return nil, fmt.Errorf("缁熻璺緞鏁伴噺澶辫触: %w", err)
+		return nil, fmt.Errorf("统计路径数量失败: %w", err)
 	}
 
 	totalPages := int(total) / req.PageSize
@@ -193,22 +193,22 @@ func (s *pathService) GetPaths(ctx context.Context, req GetPathsRequest) (*GetPa
 	}, nil
 }
 
-// ListPaths 鑾峰彇鎵€鏈夎矾寰勫垪琛?
+// ListPaths 获取所有路径列�?
 func (s *pathService) ListPaths(ctx context.Context) ([]*domain.Path, error) {
-	// 鏋勫缓鏌ヨ閫夐」锛屼笉鍒嗛〉
+	// 构建查�选项，不分页
 	options := repositories.PathListOptions{
-		PageSize: 0, // 0 琛ㄧず涓嶅垎椤?
+		PageSize: 0, // 0 表示不分�?
 	}
 
 	paths, err := s.pathRepo.List(ctx, options)
 	if err != nil {
-		return nil, fmt.Errorf("鑾峰彇璺緞鍒楄〃澶辫触: %w", err)
+		return nil, fmt.Errorf("获取跾�列表失败: %w", err)
 	}
 
 	return paths, nil
 }
 
-// GetPathsByNode 鑾峰彇鑺傜偣鐩稿叧鐨勮矾寰?
+// GetPathsByNode 获取节点相关的路�?
 func (s *pathService) GetPathsByNode(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error) {
 	return s.pathRepo.GetByNode(ctx, nodeID)
 }

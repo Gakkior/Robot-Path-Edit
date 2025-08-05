@@ -1,14 +1,14 @@
-﻿// Package app 鏄簲鐢ㄧ▼搴忕殑涓昏缁勮灞?
+// Package app 是应用程序的主要组装�?
 //
-// 璁捐鍙傝€冿細
-// - Uber FX鐨勪緷璧栨敞鍏ユā寮?
-// - Kubernetes Controller Manager鐨勭粍浠跺崗璋?
-// - Grafana鐨勫簲鐢ㄧ▼搴忔灦鏋?
+// 设计参考：
+// - Uber FX的依赖注入模�?
+// - Kubernetes Controller Manager的组件协�?
+// - Grafana的应用程序架�?
 //
-// 鑱岃矗锛?
-// 1. 缁勪欢鍒濆鍖栧拰渚濊禆娉ㄥ叆
-// 2. 搴旂敤绋嬪簭鐢熷懡鍛ㄦ湡绠＄悊
-// 3. 鍚勪釜鏈嶅姟灞傜殑鍗忚皟
+// 职责�?
+// 1. 组件初始化和依赖注入
+// 2. 应用程序生命周期管理
+// 3. 各个服务层的协调
 package app
 
 import (
@@ -29,52 +29,52 @@ import (
 	"robot-path-editor/web"
 )
 
-// Application 搴旂敤绋嬪簭涓荤粨鏋?
-// 閲囩敤渚濊禆娉ㄥ叆妯″紡锛岀鐞嗘墍鏈夌粍浠剁殑鐢熷懡鍛ㄦ湡
+// Application 应用程序主结�?
+// 采用依赖注入模式，管理所有组件的生命周期
 type Application struct {
 	config *config.Config
 	server *http.Server
 	db     database.Database
 
-	// 鏈嶅姟灞?- 鏍稿績涓氬姟閫昏緫
+	// 服务�?- 核心业务逻辑
 	nodeService   services.NodeService
 	pathService   services.PathService
 	layoutService services.LayoutService
 	dbService     services.DatabaseService
 
-	// 澶勭悊鍣ㄥ眰 - HTTP API澶勭悊
+	// 处理器层 - HTTP API处理
 	handlers *handlers.Handlers
 
 	log *logrus.Entry
 }
 
-// New 鍒涘缓鏂扮殑搴旂敤绋嬪簭瀹炰緥
-// 閲囩敤鏋勯€犲櫒妯″紡锛岀‘淇濇墍鏈変緷璧栨纭垵濮嬪寲
+// New 创建新的应用程序实例
+// 采用构造器模式，确保所有依赖正确初始化
 func New(cfg *config.Config) (*Application, error) {
 	log := logrus.WithField("component", "app")
 
-	// 1. 鍒濆鍖栨暟鎹簱鍜屼粨鍌ㄥ眰
+	// 1. 初始化数据库和仓储层
 	var nodeRepo repositories.NodeRepository
 	var pathRepo repositories.PathRepository
 	var dbConnRepo repositories.DatabaseConnectionRepository
 	var tableMappingRepo repositories.TableMappingRepository
 	var db database.Database
 
-	// 灏濊瘯鍒濆鍖栨暟鎹簱
+	// 尝试初始化数据库
 	database, err := database.New(cfg.Database)
 	if err != nil {
-		// 濡傛灉鏁版嵁搴撳垵濮嬪寲澶辫触锛屼娇鐢ㄥ唴瀛樹粨鍌ㄤ綔涓哄悗澶?
-		log.WithError(err).Warn("鏁版嵁搴撳垵濮嬪寲澶辫触锛屼娇鐢ㄥ唴瀛樺瓨鍌?)
+		// 如果数据库初始化失败，使用内存仓储作为后�?
+		log.WithError(err).Warn("数据库初始化失败，使用内存存�?)
 
-		// 浣跨敤鍐呭瓨浠撳偍
+		// 使用内存仓储
 		nodeRepo = repositories.NewMemoryNodeRepository()
-		// 鏆傛椂浣跨敤nil锛岀◢鍚庡疄鐜板叾浠栧唴瀛樹粨鍌?
+		// 暂时使用nil，稍后实现其他内存仓�?
 		pathRepo = nil
 		dbConnRepo = nil
 		tableMappingRepo = nil
 		db = nil
 	} else {
-		// 浣跨敤鏁版嵁搴撲粨鍌?
+		// 使用数据库仓�?
 		db = database
 		nodeRepo = repositories.NewNodeRepository(db)
 		pathRepo = repositories.NewPathRepository(db)
@@ -82,10 +82,10 @@ func New(cfg *config.Config) (*Application, error) {
 		tableMappingRepo = repositories.NewTableMappingRepository(db)
 	}
 
-	// 2. 鍒濆鍖栨湇鍔″眰 - 涓氬姟閫昏緫
+	// 2. 初始化服务层 - 业务逻辑
 	nodeService := services.NewNodeService(nodeRepo)
 
-	// 濡傛灉浣跨敤鍐呭瓨妯″紡锛屽垱寤虹畝鍖栫殑鏈嶅姟
+	// 如果使用内存模式，创建简化的服务
 	var pathService services.PathService
 	var layoutService services.LayoutService
 	var dbService services.DatabaseService
@@ -95,13 +95,13 @@ func New(cfg *config.Config) (*Application, error) {
 		layoutService = services.NewLayoutService(nodeService, pathService)
 		dbService = services.NewDatabaseService(dbConnRepo, tableMappingRepo)
 	} else {
-		// 鍐呭瓨妯″紡涓嬬殑绠€鍖栨湇鍔?
+		// 内存模式下的简化服�?
 		pathService = &services.MockPathService{}
 		layoutService = &services.MockLayoutService{}
 		dbService = &services.MockDatabaseService{}
 	}
 
-	// 4. 鍒濆鍖栧鐞嗗櫒灞?- API鎺ュ彛
+	// 4. 初始化处理器�?- API接口
 	handlers := handlers.New(
 		nodeService,
 		pathService,
@@ -109,7 +109,7 @@ func New(cfg *config.Config) (*Application, error) {
 		dbService,
 	)
 
-	// 5. 鍒涘缓HTTP鏈嶅姟鍣?
+	// 5. 创建HTTP服务�?
 	server := &http.Server{
 		Addr:         cfg.Server.Addr,
 		ReadTimeout:  cfg.Server.ReadTimeout,
@@ -129,57 +129,57 @@ func New(cfg *config.Config) (*Application, error) {
 		log:           log,
 	}
 
-	// 6. 閰嶇疆璺敱
+	// 6. 配置路由
 	if err := app.setupRoutes(); err != nil {
-		return nil, fmt.Errorf("閰嶇疆璺敱澶辫触: %w", err)
+		return nil, fmt.Errorf("配置路由失败: %w", err)
 	}
 
-	log.Info("搴旂敤绋嬪簭鍒濆鍖栧畬鎴?)
+	log.Info("应用程序初始化完�?)
 	return app, nil
 }
 
-// Start 鍚姩搴旂敤绋嬪簭
-// 鍙傝€僈ubernetes Controller鐨勫惎鍔ㄦā寮?
+// Start 启动应用程序
+// 参考Kubernetes Controller的启动模�?
 func (a *Application) Start(ctx context.Context) error {
-	a.log.Info("鍚姩搴旂敤绋嬪簭...")
+	a.log.Info("启动应用程序...")
 
-	// 鍚姩鍚庡彴鏈嶅姟
+	// 启动后台服务
 	go func() {
 		if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.log.WithError(err).Error("HTTP鏈嶅姟鍣ㄥ惎鍔ㄥけ璐?)
+			a.log.WithError(err).Error("HTTP服务器启动失�?)
 		}
 	}()
 
-	// 绛夊緟涓婁笅鏂囧彇娑?
+	// 等待上下文取�?
 	<-ctx.Done()
 	return nil
 }
 
-// Stop 鍋滄搴旂敤绋嬪簭
-// 瀹炵幇浼橀泤鍏抽棴锛屽弬鑰僈ubernetes鐨勪紭闆呯粓姝?
+// Stop 停止应用程序
+// 实现优雅关闭，参考Kubernetes的优雅终�?
 func (a *Application) Stop(ctx context.Context) error {
-	a.log.Info("鍋滄搴旂敤绋嬪簭...")
+	a.log.Info("停止应用程序...")
 
-	// 1. 鍋滄HTTP鏈嶅姟鍣?
+	// 1. 停止HTTP服务�?
 	if err := a.server.Shutdown(ctx); err != nil {
-		a.log.WithError(err).Error("HTTP鏈嶅姟鍣ㄥ叧闂け璐?)
+		a.log.WithError(err).Error("HTTP服务器关闭失�?)
 		return err
 	}
 
-	// 2. 鍏抽棴鏁版嵁搴撹繛鎺?
+	// 2. 关闭数据库连�?
 	if err := a.db.Close(); err != nil {
-		a.log.WithError(err).Error("鏁版嵁搴撳叧闂け璐?)
+		a.log.WithError(err).Error("数据库关闭失�?)
 		return err
 	}
 
-	a.log.Info("搴旂敤绋嬪簭宸插仠姝?)
+	a.log.Info("应用程序已停�?)
 	return nil
 }
 
-// setupRoutes 閰嶇疆HTTP璺敱
-// 鍙傝€僈ubernetes API Server鐨勮矾鐢辫璁?
+// setupRoutes 配置HTTP路由
+// 参考Kubernetes API Server的路由设�?
 func (a *Application) setupRoutes() error {
-	// 鏍规嵁鐜璁剧疆Gin妯″紡
+	// 根据环境设置Gin模式
 	if a.config.Logger.Level == "debug" {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -188,24 +188,24 @@ func (a *Application) setupRoutes() error {
 
 	router := gin.New()
 
-	// 鍩虹涓棿浠?- 鍙傝€僈ubernetes API Server鐨勪腑闂翠欢閾?
+	// 基础中间�?- 参考Kubernetes API Server的中间件�?
 	router.Use(middleware.Logger())
 	router.Use(middleware.Recovery())
 	router.Use(middleware.CORS())
 
-	// 鍋ュ悍妫€鏌ョ鐐?- 鍙傝€僈ubernetes鐨勫仴搴锋鏌?
+	// 健康检查端�?- 参考Kubernetes的健康检�?
 	router.GET("/health", a.handlers.HealthCheck)
 	router.GET("/ready", a.handlers.ReadinessCheck)
 
-	// 鎸囨爣绔偣 - 鍙傝€働rometheus鐨勬寚鏍囨毚闇?
+	// 指标端点 - 参考Prometheus的指标暴�?
 	if a.config.Metrics.Enabled {
 		router.GET(a.config.Metrics.Path, gin.WrapH(promhttp.Handler()))
 	}
 
-	// API璺敱缁?- RESTful API璁捐
+	// API路由�?- RESTful API设计
 	api := router.Group("/api/v1")
 	{
-		// 鑺傜偣绠＄悊API
+		// 节点管理API
 		nodes := api.Group("/nodes")
 		{
 			nodes.GET("", a.handlers.ListNodes)
@@ -216,7 +216,7 @@ func (a *Application) setupRoutes() error {
 			nodes.PUT("/:id/position", a.handlers.UpdateNodePosition)
 		}
 
-		// 璺緞绠＄悊API
+		// 路径管理API
 		paths := api.Group("/paths")
 		{
 			paths.GET("", a.handlers.ListPaths)
@@ -227,14 +227,14 @@ func (a *Application) setupRoutes() error {
 			paths.POST("/generate", a.handlers.GeneratePaths)
 		}
 
-		// 甯冨眬绠＄悊API
+		// 布局管理API
 		layouts := api.Group("/layouts")
 		{
 			layouts.POST("/arrange", a.handlers.ArrangeNodes)
 			layouts.GET("/algorithms", a.handlers.ListLayoutAlgorithms)
 		}
 
-		// 鏁版嵁搴撶鐞咥PI
+		// 数据库管理API
 		databases := api.Group("/databases")
 		{
 			databases.GET("/connections", a.handlers.ListDatabaseConnections)
@@ -252,7 +252,7 @@ func (a *Application) setupRoutes() error {
 			databases.DELETE("/mappings/:id", a.handlers.DeleteTableMapping)
 		}
 
-		// 鍥惧垎鏋怉PI
+		// 图分析API
 		analysis := api.Group("/analysis")
 		{
 			analysis.POST("/shortest-path", a.handlers.FindShortestPath)
@@ -261,13 +261,13 @@ func (a *Application) setupRoutes() error {
 		}
 	}
 
-	// WebSocket API - 瀹炴椂閫氫俊
+	// WebSocket API - 实时通信
 	ws := router.Group("/ws")
 	{
 		ws.GET("/canvas", a.handlers.CanvasWebSocket)
 	}
 
-	// 闈欐€佹枃浠舵湇鍔?- 鍓嶇璧勬簮
+	// 静态文件服�?- 前端资源
 	router.StaticFS("/static", http.FS(web.StaticFiles))
 	router.GET("/", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", web.IndexHTML)

@@ -1,4 +1,4 @@
-﻿// Package services 鎻掍欢绯荤粺鏈嶅姟瀹炵幇
+// Package services 插件系统服务实现
 package services
 
 import (
@@ -11,7 +11,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// Plugin 鎻掍欢鎺ュ彛
+// Plugin 插件接口
 type Plugin interface {
 	Name() string
 	Version() string
@@ -20,29 +20,29 @@ type Plugin interface {
 	Shutdown(ctx context.Context) error
 }
 
-// LayoutPlugin 甯冨眬鎻掍欢鎺ュ彛
+// LayoutPlugin 布局插件接口
 type LayoutPlugin interface {
 	Plugin
 	ApplyLayout(nodes []domain.Node, paths []domain.Path, config map[string]interface{}) ([]domain.Node, error)
 }
 
-// PathGenerationPlugin 璺緞鐢熸垚鎻掍欢鎺ュ彛
+// PathGenerationPlugin 路径生成插件接口
 type PathGenerationPlugin interface {
 	Plugin
 	GeneratePaths(nodes []domain.Node, config map[string]interface{}) ([]domain.Path, error)
 }
 
-// DataProcessorPlugin 鏁版嵁澶勭悊鎻掍欢鎺ュ彛
+// DataProcessorPlugin 数据处理插件接口
 type DataProcessorPlugin interface {
 	Plugin
 	ProcessNodes(nodes []domain.Node, config map[string]interface{}) ([]domain.Node, error)
 	ProcessPaths(paths []domain.Path, config map[string]interface{}) ([]domain.Path, error)
 }
 
-// EventHandler 浜嬩欢澶勭悊鍣ㄧ被鍨?
+// EventHandler 事件处理器类�?
 type EventHandler func(event Event) error
 
-// Event 浜嬩欢缁撴瀯
+// Event 事件结构
 type Event struct {
 	Type      string                 `json:"type"`
 	Source    string                 `json:"source"`
@@ -50,7 +50,7 @@ type Event struct {
 	Data      map[string]interface{} `json:"data"`
 }
 
-// PluginRegistry 鎻掍欢娉ㄥ唽琛?
+// PluginRegistry 插件注册�?
 type PluginRegistry struct {
 	mu                    sync.RWMutex
 	layoutPlugins         map[string]LayoutPlugin
@@ -60,40 +60,40 @@ type PluginRegistry struct {
 	loadedPlugins         map[string]Plugin
 }
 
-// PluginService 鎻掍欢鏈嶅姟鎺ュ彛
+// PluginService 插件服务接口
 type PluginService interface {
-	// 鎻掍欢鐢熷懡鍛ㄦ湡
+	// 插件生命周期
 	LoadPlugin(ctx context.Context, pluginPath string) error
 	UnloadPlugin(ctx context.Context, pluginName string) error
 	ListPlugins() []PluginInfo
 	GetPluginStatus(pluginName string) (PluginStatus, error)
 
-	// 甯冨眬鎻掍欢
+	// 布局插件
 	RegisterLayoutPlugin(plugin LayoutPlugin) error
 	UnregisterLayoutPlugin(pluginName string) error
 	ApplyLayoutPlugin(ctx context.Context, pluginName string, nodes []domain.Node, paths []domain.Path, config map[string]interface{}) ([]domain.Node, error)
 	ListLayoutPlugins() []string
 
-	// 璺緞鐢熸垚鎻掍欢
+	// 路径生成插件
 	RegisterPathGenerationPlugin(plugin PathGenerationPlugin) error
 	UnregisterPathGenerationPlugin(pluginName string) error
 	GeneratePathsWithPlugin(ctx context.Context, pluginName string, nodes []domain.Node, config map[string]interface{}) ([]domain.Path, error)
 	ListPathGenerationPlugins() []string
 
-	// 鏁版嵁澶勭悊鎻掍欢
+	// 数据处理插件
 	RegisterDataProcessorPlugin(plugin DataProcessorPlugin) error
 	UnregisterDataProcessorPlugin(pluginName string) error
 	ProcessDataWithPlugin(ctx context.Context, pluginName string, nodes []domain.Node, paths []domain.Path, config map[string]interface{}) ([]domain.Node, []domain.Path, error)
 	ListDataProcessorPlugins() []string
 
-	// 浜嬩欢绯荤粺
+	// 事件系统
 	RegisterEventHandler(eventType string, handler EventHandler) error
 	UnregisterEventHandler(eventType string, handlerID string) error
 	EmitEvent(event Event) error
 	SubscribeToEvents(eventTypes []string) (<-chan Event, error)
 }
 
-// PluginInfo 鎻掍欢淇℃伅
+// PluginInfo 插件信息
 type PluginInfo struct {
 	Name        string                 `json:"name"`
 	Version     string                 `json:"version"`
@@ -103,7 +103,7 @@ type PluginInfo struct {
 	Config      map[string]interface{} `json:"config,omitempty"`
 }
 
-// PluginStatus 鎻掍欢鐘舵€?
+// PluginStatus 插件状�?
 type PluginStatus string
 
 const (
@@ -113,7 +113,7 @@ const (
 	PluginStatusDisabled PluginStatus = "disabled"
 )
 
-// pluginService 鎻掍欢鏈嶅姟瀹炵幇
+// pluginService 插件服务实现
 type pluginService struct {
 	registry     *PluginRegistry
 	eventChannel chan Event
@@ -121,7 +121,7 @@ type pluginService struct {
 	cancel       context.CancelFunc
 }
 
-// NewPluginService 鍒涘缓鎻掍欢鏈嶅姟
+// NewPluginService 创建插件服务
 func NewPluginService() PluginService {
 	ctx, cancel := context.WithCancel(context.Background())
 	service := &pluginService{
@@ -137,48 +137,48 @@ func NewPluginService() PluginService {
 		cancel:       cancel,
 	}
 
-	// 鍚姩浜嬩欢澶勭悊鍗忕▼
+	// 启动事件处理协程
 	go service.eventProcessor()
 
 	return service
 }
 
-// LoadPlugin 鍔犺浇鎻掍欢 (鏀寔Go plugin绯荤粺)
+// LoadPlugin 加载插件 (支持Go plugin系统)
 func (s *pluginService) LoadPlugin(ctx context.Context, pluginPath string) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
 
-	// 鍔犺浇Go鎻掍欢
+	// 加载Go插件
 	p, err := plugin.Open(pluginPath)
 	if err != nil {
-		return fmt.Errorf("鍔犺浇鎻掍欢澶辫触: %v", err)
+		return fmt.Errorf("加载插件失败: %v", err)
 	}
 
-	// 鏌ユ壘鎻掍欢鍏ュ彛鐐?
+	// 查找插件入口�?
 	symbol, err := p.Lookup("NewPlugin")
 	if err != nil {
-		return fmt.Errorf("鏈壘鍒版彃浠跺叆鍙ｇ偣 'NewPlugin': %v", err)
+		return fmt.Errorf("未找到插件入口点 'NewPlugin': %v", err)
 	}
 
-	// 妫€鏌ュ叆鍙ｇ偣绫诲瀷
+	// 检查入口点类型
 	newPluginFunc, ok := symbol.(func() Plugin)
 	if !ok {
-		return fmt.Errorf("鎻掍欢鍏ュ彛鐐圭被鍨嬮敊璇紝鏈熸湜: func() Plugin")
+		return fmt.Errorf("插件入口点类型错误，期望: func() Plugin")
 	}
 
-	// 鍒涘缓鎻掍欢瀹炰緥
+	// 创建插件实例
 	pluginInstance := newPluginFunc()
 
-	// 鍒濆鍖栨彃浠?
+	// 初始化插�?
 	if err := pluginInstance.Initialize(ctx, nil); err != nil {
-		return fmt.Errorf("鎻掍欢鍒濆鍖栧け璐? %v", err)
+		return fmt.Errorf("插件初始化失�? %v", err)
 	}
 
-	// 鏍规嵁鎻掍欢绫诲瀷娉ㄥ唽
+	// 根据插件类型注册
 	pluginName := pluginInstance.Name()
 	s.registry.loadedPlugins[pluginName] = pluginInstance
 
-	// 妫€鏌ユ彃浠剁被鍨嬪苟娉ㄥ唽鍒扮浉搴旂殑娉ㄥ唽琛?
+	// 检查插件类型并注册到相应的注册�?
 	if layoutPlugin, ok := pluginInstance.(LayoutPlugin); ok {
 		s.registry.layoutPlugins[pluginName] = layoutPlugin
 	}
@@ -192,22 +192,22 @@ func (s *pluginService) LoadPlugin(ctx context.Context, pluginPath string) error
 	return nil
 }
 
-// UnloadPlugin 鍗歌浇鎻掍欢
+// UnloadPlugin 卸载插件
 func (s *pluginService) UnloadPlugin(ctx context.Context, pluginName string) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
 
 	plugin, exists := s.registry.loadedPlugins[pluginName]
 	if !exists {
-		return fmt.Errorf("鎻掍欢 %s 鏈姞杞?, pluginName)
+		return fmt.Errorf("插件 %s 未加�?, pluginName)
 	}
 
-	// 鍏抽棴鎻掍欢
+	// 关闭插件
 	if err := plugin.Shutdown(ctx); err != nil {
-		return fmt.Errorf("鎻掍欢鍏抽棴澶辫触: %v", err)
+		return fmt.Errorf("插件关闭失败: %v", err)
 	}
 
-	// 浠庢墍鏈夋敞鍐岃〃涓Щ闄?
+	// 从所有注册表中移�?
 	delete(s.registry.loadedPlugins, pluginName)
 	delete(s.registry.layoutPlugins, pluginName)
 	delete(s.registry.pathGenerationPlugins, pluginName)
@@ -216,7 +216,7 @@ func (s *pluginService) UnloadPlugin(ctx context.Context, pluginName string) err
 	return nil
 }
 
-// ListPlugins 鍒楀嚭鎵€鏈夋彃浠?
+// ListPlugins 列出所有插�?
 func (s *pluginService) ListPlugins() []PluginInfo {
 	s.registry.mu.RLock()
 	defer s.registry.mu.RUnlock()
@@ -229,14 +229,14 @@ func (s *pluginService) ListPlugins() []PluginInfo {
 			Version:     plugin.Version(),
 			Description: plugin.Description(),
 			Type:        pluginType,
-			Status:      PluginStatusActive, // 绠€鍖栫姸鎬佺鐞?
+			Status:      PluginStatusActive, // 简化状态管�?
 		})
 	}
 
 	return plugins
 }
 
-// GetPluginStatus 鑾峰彇鎻掍欢鐘舵€?
+// GetPluginStatus 获取插件状�?
 func (s *pluginService) GetPluginStatus(pluginName string) (PluginStatus, error) {
 	s.registry.mu.RLock()
 	defer s.registry.mu.RUnlock()
@@ -244,10 +244,10 @@ func (s *pluginService) GetPluginStatus(pluginName string) (PluginStatus, error)
 	if _, exists := s.registry.loadedPlugins[pluginName]; exists {
 		return PluginStatusActive, nil
 	}
-	return PluginStatusDisabled, fmt.Errorf("鎻掍欢 %s 鏈壘鍒?, pluginName)
+	return PluginStatusDisabled, fmt.Errorf("插件 %s 未找�?, pluginName)
 }
 
-// RegisterLayoutPlugin 娉ㄥ唽甯冨眬鎻掍欢
+// RegisterLayoutPlugin 注册布局插件
 func (s *pluginService) RegisterLayoutPlugin(plugin LayoutPlugin) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -257,7 +257,7 @@ func (s *pluginService) RegisterLayoutPlugin(plugin LayoutPlugin) error {
 	return nil
 }
 
-// UnregisterLayoutPlugin 娉ㄩ攢甯冨眬鎻掍欢
+// UnregisterLayoutPlugin 注销布局插件
 func (s *pluginService) UnregisterLayoutPlugin(pluginName string) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -266,20 +266,20 @@ func (s *pluginService) UnregisterLayoutPlugin(pluginName string) error {
 	return nil
 }
 
-// ApplyLayoutPlugin 搴旂敤甯冨眬鎻掍欢
+// ApplyLayoutPlugin 应用布局插件
 func (s *pluginService) ApplyLayoutPlugin(ctx context.Context, pluginName string, nodes []domain.Node, paths []domain.Path, config map[string]interface{}) ([]domain.Node, error) {
 	s.registry.mu.RLock()
 	plugin, exists := s.registry.layoutPlugins[pluginName]
 	s.registry.mu.RUnlock()
 
 	if !exists {
-		return nil, fmt.Errorf("甯冨眬鎻掍欢 %s 鏈壘鍒?, pluginName)
+		return nil, fmt.Errorf("布局插件 %s 未找�?, pluginName)
 	}
 
 	return plugin.ApplyLayout(nodes, paths, config)
 }
 
-// ListLayoutPlugins 鍒楀嚭甯冨眬鎻掍欢
+// ListLayoutPlugins 列出布局插件
 func (s *pluginService) ListLayoutPlugins() []string {
 	s.registry.mu.RLock()
 	defer s.registry.mu.RUnlock()
@@ -291,7 +291,7 @@ func (s *pluginService) ListLayoutPlugins() []string {
 	return plugins
 }
 
-// RegisterPathGenerationPlugin 娉ㄥ唽璺緞鐢熸垚鎻掍欢
+// RegisterPathGenerationPlugin 注册路径生成插件
 func (s *pluginService) RegisterPathGenerationPlugin(plugin PathGenerationPlugin) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -301,7 +301,7 @@ func (s *pluginService) RegisterPathGenerationPlugin(plugin PathGenerationPlugin
 	return nil
 }
 
-// UnregisterPathGenerationPlugin 娉ㄩ攢璺緞鐢熸垚鎻掍欢
+// UnregisterPathGenerationPlugin 注销路径生成插件
 func (s *pluginService) UnregisterPathGenerationPlugin(pluginName string) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -310,20 +310,20 @@ func (s *pluginService) UnregisterPathGenerationPlugin(pluginName string) error 
 	return nil
 }
 
-// GeneratePathsWithPlugin 浣跨敤鎻掍欢鐢熸垚璺緞
+// GeneratePathsWithPlugin 使用插件生成路径
 func (s *pluginService) GeneratePathsWithPlugin(ctx context.Context, pluginName string, nodes []domain.Node, config map[string]interface{}) ([]domain.Path, error) {
 	s.registry.mu.RLock()
 	plugin, exists := s.registry.pathGenerationPlugins[pluginName]
 	s.registry.mu.RUnlock()
 
 	if !exists {
-		return nil, fmt.Errorf("璺緞鐢熸垚鎻掍欢 %s 鏈壘鍒?, pluginName)
+		return nil, fmt.Errorf("路径生成插件 %s 未找�?, pluginName)
 	}
 
 	return plugin.GeneratePaths(nodes, config)
 }
 
-// ListPathGenerationPlugins 鍒楀嚭璺緞鐢熸垚鎻掍欢
+// ListPathGenerationPlugins 列出路径生成插件
 func (s *pluginService) ListPathGenerationPlugins() []string {
 	s.registry.mu.RLock()
 	defer s.registry.mu.RUnlock()
@@ -335,7 +335,7 @@ func (s *pluginService) ListPathGenerationPlugins() []string {
 	return plugins
 }
 
-// RegisterDataProcessorPlugin 娉ㄥ唽鏁版嵁澶勭悊鎻掍欢
+// RegisterDataProcessorPlugin 注册数据处理插件
 func (s *pluginService) RegisterDataProcessorPlugin(plugin DataProcessorPlugin) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -345,7 +345,7 @@ func (s *pluginService) RegisterDataProcessorPlugin(plugin DataProcessorPlugin) 
 	return nil
 }
 
-// UnregisterDataProcessorPlugin 娉ㄩ攢鏁版嵁澶勭悊鎻掍欢
+// UnregisterDataProcessorPlugin 注销数据处理插件
 func (s *pluginService) UnregisterDataProcessorPlugin(pluginName string) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -354,30 +354,30 @@ func (s *pluginService) UnregisterDataProcessorPlugin(pluginName string) error {
 	return nil
 }
 
-// ProcessDataWithPlugin 浣跨敤鎻掍欢澶勭悊鏁版嵁
+// ProcessDataWithPlugin 使用插件处理数据
 func (s *pluginService) ProcessDataWithPlugin(ctx context.Context, pluginName string, nodes []domain.Node, paths []domain.Path, config map[string]interface{}) ([]domain.Node, []domain.Path, error) {
 	s.registry.mu.RLock()
 	plugin, exists := s.registry.dataProcessorPlugins[pluginName]
 	s.registry.mu.RUnlock()
 
 	if !exists {
-		return nil, nil, fmt.Errorf("鏁版嵁澶勭悊鎻掍欢 %s 鏈壘鍒?, pluginName)
+		return nil, nil, fmt.Errorf("数据处理插件 %s 未找�?, pluginName)
 	}
 
 	processedNodes, err := plugin.ProcessNodes(nodes, config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("鑺傜偣澶勭悊澶辫触: %v", err)
+		return nil, nil, fmt.Errorf("节点处理失败: %v", err)
 	}
 
 	processedPaths, err := plugin.ProcessPaths(paths, config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("璺緞澶勭悊澶辫触: %v", err)
+		return nil, nil, fmt.Errorf("路径处理失败: %v", err)
 	}
 
 	return processedNodes, processedPaths, nil
 }
 
-// ListDataProcessorPlugins 鍒楀嚭鏁版嵁澶勭悊鎻掍欢
+// ListDataProcessorPlugins 列出数据处理插件
 func (s *pluginService) ListDataProcessorPlugins() []string {
 	s.registry.mu.RLock()
 	defer s.registry.mu.RUnlock()
@@ -389,7 +389,7 @@ func (s *pluginService) ListDataProcessorPlugins() []string {
 	return plugins
 }
 
-// RegisterEventHandler 娉ㄥ唽浜嬩欢澶勭悊鍣?
+// RegisterEventHandler 注册事件处理�?
 func (s *pluginService) RegisterEventHandler(eventType string, handler EventHandler) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -398,36 +398,36 @@ func (s *pluginService) RegisterEventHandler(eventType string, handler EventHand
 	return nil
 }
 
-// UnregisterEventHandler 娉ㄩ攢浜嬩欢澶勭悊鍣?(绠€鍖栧疄鐜?
+// UnregisterEventHandler 注销事件处理�?(简化实�?
 func (s *pluginService) UnregisterEventHandler(eventType string, handlerID string) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
 
-	// 绠€鍖栧疄鐜帮細娓呯┖璇ヤ簨浠剁被鍨嬬殑鎵€鏈夊鐞嗗櫒
+	// 简化实现：清空该事件类型的所有处理器
 	delete(s.registry.eventHandlers, eventType)
 	return nil
 }
 
-// EmitEvent 鍙戝嚭浜嬩欢
+// EmitEvent 发出事件
 func (s *pluginService) EmitEvent(event Event) error {
 	select {
 	case s.eventChannel <- event:
 		return nil
 	default:
-		return fmt.Errorf("浜嬩欢闃熷垪宸叉弧")
+		return fmt.Errorf("事件队列已满")
 	}
 }
 
-// SubscribeToEvents 璁㈤槄浜嬩欢 (绠€鍖栧疄鐜?
+// SubscribeToEvents 订阅事件 (简化实�?
 func (s *pluginService) SubscribeToEvents(eventTypes []string) (<-chan Event, error) {
-	// 绠€鍖栧疄鐜帮細杩斿洖涓讳簨浠堕€氶亾
-	// 鍦ㄧ敓浜х幆澧冧腑锛屽簲璇ヤ负姣忎釜璁㈤槄鑰呭垱寤轰笓闂ㄧ殑閫氶亾骞惰繃婊や簨浠剁被鍨?
+	// 简化实现：返回主事件通道
+	// 在生产环境中，应该为每个订阅者创建专门的通道并过滤事件类�?
 	return s.eventChannel, nil
 }
 
-// 绉佹湁鏂规硶
+// 私有方法
 
-// eventProcessor 浜嬩欢澶勭悊鍣?
+// eventProcessor 事件处理�?
 func (s *pluginService) eventProcessor() {
 	for {
 		select {
@@ -439,7 +439,7 @@ func (s *pluginService) eventProcessor() {
 	}
 }
 
-// handleEvent 澶勭悊浜嬩欢
+// handleEvent 处理事件
 func (s *pluginService) handleEvent(event Event) {
 	s.registry.mu.RLock()
 	handlers, exists := s.registry.eventHandlers[event.Type]
@@ -449,18 +449,18 @@ func (s *pluginService) handleEvent(event Event) {
 		return
 	}
 
-	// 骞跺彂澶勭悊鎵€鏈夊鐞嗗櫒
+	// 并发处理所有处理器
 	for _, handler := range handlers {
 		go func(h EventHandler) {
 			if err := h(event); err != nil {
-				// 鍦ㄧ敓浜х幆澧冧腑搴旇璁板綍鏃ュ織
-				fmt.Printf("浜嬩欢澶勭悊澶辫触: %v\n", err)
+				// 在生产环境中应该记录日志
+				fmt.Printf("事件处理失败: %v\n", err)
 			}
 		}(handler)
 	}
 }
 
-// getPluginType 鑾峰彇鎻掍欢绫诲瀷
+// getPluginType 获取插件类型
 func (s *pluginService) getPluginType(plugin Plugin) string {
 	pluginType := reflect.TypeOf(plugin)
 	if pluginType.Implements(reflect.TypeOf((*LayoutPlugin)(nil)).Elem()) {
@@ -475,17 +475,17 @@ func (s *pluginService) getPluginType(plugin Plugin) string {
 	return "unknown"
 }
 
-// Shutdown 鍏抽棴鎻掍欢鏈嶅姟
+// Shutdown 关闭插件服务
 func (s *pluginService) Shutdown(ctx context.Context) error {
 	s.cancel()
 
-	// 鍏抽棴鎵€鏈夋彃浠?
+	// 关闭所有插�?
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
 
 	for name, plugin := range s.registry.loadedPlugins {
 		if err := plugin.Shutdown(ctx); err != nil {
-			fmt.Printf("鎻掍欢 %s 鍏抽棴澶辫触: %v\n", name, err)
+			fmt.Printf("插件 %s 关闭失败: %v\n", name, err)
 		}
 	}
 

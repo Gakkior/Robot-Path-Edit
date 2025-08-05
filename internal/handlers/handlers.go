@@ -1,4 +1,4 @@
-﻿// Package handlers HTTP澶勭悊鍣ㄥ眰
+// Package handlers HTTP处理器层
 package handlers
 
 import (
@@ -9,7 +9,7 @@ import (
 	"robot-path-editor/internal/services"
 )
 
-// Handlers HTTP澶勭悊鍣ㄩ泦鍚?
+// Handlers HTTP处理器集�?
 type Handlers struct {
 	nodeService   services.NodeService
 	pathService   services.PathService
@@ -17,7 +17,7 @@ type Handlers struct {
 	dbService     services.DatabaseService
 }
 
-// New 鍒涘缓澶勭悊鍣ㄥ疄渚?
+// New 创建处理器实�?
 func New(
 	nodeService services.NodeService,
 	pathService services.PathService,
@@ -32,7 +32,7 @@ func New(
 	}
 }
 
-// HealthCheck 鍋ュ悍妫€鏌?
+// HealthCheck 健康检�?
 func (h *Handlers) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
@@ -40,7 +40,7 @@ func (h *Handlers) HealthCheck(c *gin.Context) {
 	})
 }
 
-// ReadinessCheck 灏辩华妫€鏌?
+// ReadinessCheck 就绪检�?
 func (h *Handlers) ReadinessCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ready",
@@ -48,84 +48,84 @@ func (h *Handlers) ReadinessCheck(c *gin.Context) {
 	})
 }
 
-// 鑺傜偣鐩稿叧澶勭悊鍣?
+// 节点相关处理�?
 func (h *Handlers) ListNodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"nodes": []interface{}{}})
 }
 
 func (h *Handlers) CreateNode(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒涘缓鑺傜偣"})
+	c.JSON(http.StatusOK, gin.H{"message": "创建节点"})
 }
 
 func (h *Handlers) GetNode(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鑾峰彇鑺傜偣"})
+	c.JSON(http.StatusOK, gin.H{"message": "获取节点"})
 }
 
 func (h *Handlers) UpdateNode(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鏇存柊鑺傜偣"})
+	c.JSON(http.StatusOK, gin.H{"message": "更新节点"})
 }
 
 func (h *Handlers) DeleteNode(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒犻櫎鑺傜偣"})
+	c.JSON(http.StatusOK, gin.H{"message": "删除节点"})
 }
 
 func (h *Handlers) UpdateNodePosition(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鏇存柊鑺傜偣浣嶇疆"})
+	c.JSON(http.StatusOK, gin.H{"message": "更新节点位置"})
 }
 
-// 璺緞鐩稿叧澶勭悊鍣?
+// 路径相关处理�?
 func (h *Handlers) ListPaths(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"paths": []interface{}{}})
 }
 
 func (h *Handlers) CreatePath(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒涘缓璺緞"})
+	c.JSON(http.StatusOK, gin.H{"message": "创建路径"})
 }
 
 func (h *Handlers) GetPath(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鑾峰彇璺緞"})
+	c.JSON(http.StatusOK, gin.H{"message": "获取路径"})
 }
 
 func (h *Handlers) UpdatePath(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鏇存柊璺緞"})
+	c.JSON(http.StatusOK, gin.H{"message": "更新路径"})
 }
 
 func (h *Handlers) DeletePath(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒犻櫎璺緞"})
+	c.JSON(http.StatusOK, gin.H{"message": "删除路径"})
 }
 
 func (h *Handlers) GeneratePaths(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鐢熸垚璺緞"})
+	c.JSON(http.StatusOK, gin.H{"message": "生成路径"})
 }
 
-// 甯冨眬鐩稿叧澶勭悊鍣?
+// 布局相关处理�?
 func (h *Handlers) ArrangeNodes(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鎺掑垪鑺傜偣"})
+	c.JSON(http.StatusOK, gin.H{"message": "排列节点"})
 }
 
 func (h *Handlers) ListLayoutAlgorithms(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"algorithms": []string{"tree", "force-directed", "grid"}})
 }
 
-// 鏁版嵁搴撶浉鍏冲鐞嗗櫒
+// 数据库相关处理器
 func (h *Handlers) ListDatabaseConnections(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"connections": []interface{}{}})
 }
 
 func (h *Handlers) CreateDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒涘缓鏁版嵁搴撹繛鎺?})
+	c.JSON(http.StatusOK, gin.H{"message": "创建数据库连�?})
 }
 
 func (h *Handlers) UpdateDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鏇存柊鏁版嵁搴撹繛鎺?})
+	c.JSON(http.StatusOK, gin.H{"message": "更新数据库连�?})
 }
 
 func (h *Handlers) DeleteDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒犻櫎鏁版嵁搴撹繛鎺?})
+	c.JSON(http.StatusOK, gin.H{"message": "删除数据库连�?})
 }
 
 func (h *Handlers) TestDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "娴嬭瘯鏁版嵁搴撹繛鎺?})
+	c.JSON(http.StatusOK, gin.H{"message": "测试数据库连�?})
 }
 
 func (h *Handlers) ListTables(c *gin.Context) {
@@ -141,31 +141,31 @@ func (h *Handlers) ListTableMappings(c *gin.Context) {
 }
 
 func (h *Handlers) CreateTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒涘缓琛ㄦ槧灏?})
+	c.JSON(http.StatusOK, gin.H{"message": "创建表映�?})
 }
 
 func (h *Handlers) UpdateTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鏇存柊琛ㄦ槧灏?})
+	c.JSON(http.StatusOK, gin.H{"message": "更新表映�?})
 }
 
 func (h *Handlers) DeleteTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒犻櫎琛ㄦ槧灏?})
+	c.JSON(http.StatusOK, gin.H{"message": "删除表映�?})
 }
 
-// 鍒嗘瀽鐩稿叧澶勭悊鍣?
+// 分析相关处理�?
 func (h *Handlers) FindShortestPath(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鏌ユ壘鏈€鐭矾寰?})
+	c.JSON(http.StatusOK, gin.H{"message": "查找最短路�?})
 }
 
 func (h *Handlers) AnalyzeConnectivity(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鍒嗘瀽杩為€氭€?})
+	c.JSON(http.StatusOK, gin.H{"message": "分析连通�?})
 }
 
 func (h *Handlers) DetectCycles(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "妫€娴嬬幆璺?})
+	c.JSON(http.StatusOK, gin.H{"message": "检测环�?})
 }
 
-// WebSocket澶勭悊鍣?
+// WebSocket处理�?
 func (h *Handlers) CanvasWebSocket(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "鐢诲竷WebSocket"})
+	c.JSON(http.StatusOK, gin.H{"message": "画布WebSocket"})
 }

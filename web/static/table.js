@@ -1,11 +1,11 @@
-﻿// 琛ㄦ牸瑙嗗浘鑴氭湰
-console.log('鍔犺浇琛ㄦ牸瑙嗗浘鑴氭湰');
+// 表格视图脚本
+console.log('加载表格视图脚本');
 
 const API_BASE = '/';
 
 class TableView {
   constructor() {
-    this.currentView = 'nodes'; // 'nodes' 鎴?'paths'
+    this.currentView = 'nodes'; // 'nodes' �?'paths'
     this.data = { nodes: {}, paths: {} };
     this.init();
   }
@@ -19,15 +19,15 @@ class TableView {
   async loadData() {
     try {
       const response = await fetch(API_BASE + 'canvas-data');
-      if (!response.ok) throw new Error('鑾峰彇鏁版嵁澶辫触');
+      if (!response.ok) throw new Error('获取数据失败');
       this.data = await response.json();
     } catch (error) {
-      console.error('鍔犺浇鏁版嵁澶辫触:', error);
+      console.error('加载数据失败:', error);
     }
   }
 
   setupEventListeners() {
-    // 瑙嗗浘鍒囨崲鎸夐挳
+    // 视图切换按钮
     const nodeViewBtn = document.getElementById('nodeViewBtn');
     const pathViewBtn = document.getElementById('pathViewBtn');
     const refreshBtn = document.getElementById('refreshBtn');
@@ -62,7 +62,7 @@ class TableView {
   switchView(viewType) {
     this.currentView = viewType;
     
-    // 鏇存柊鎸夐挳鐘舵€?
+    // 更新按钮状�?
     document.getElementById('nodeViewBtn').classList.toggle('active', viewType === 'nodes');
     document.getElementById('pathViewBtn').classList.toggle('active', viewType === 'paths');
     
@@ -92,21 +92,21 @@ class TableView {
   renderNodeTable(nodes) {
     let html = `
       <div class="table-header">
-        <h3>鑺傜偣绠＄悊 (${nodes.length} 涓妭鐐?</h3>
+        <h3>节点管理 (${nodes.length} 个节�?</h3>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
               <th>ID</th>
-              <th>鍚嶇О</th>
-              <th>绫诲瀷</th>
-              <th>鐘舵€?/th>
-              <th>X鍧愭爣</th>
-              <th>Y鍧愭爣</th>
-              <th>Z鍧愭爣</th>
-              <th>鍒涘缓鏃堕棿</th>
-              <th>鎿嶄綔</th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>状�?/th>
+              <th>X坐标</th>
+              <th>Y坐标</th>
+              <th>Z坐标</th>
+              <th>创建时间</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -124,8 +124,8 @@ class TableView {
           <td><input type="number" value="${node.position.z || 0}" data-field="position.z" class="editable-input" step="0.01"></td>
           <td>${new Date(node.created_at).toLocaleString()}</td>
           <td>
-            <button class="btn-small btn-save" data-id="${node.id}">淇濆瓨</button>
-            <button class="btn-small btn-delete" data-id="${node.id}">鍒犻櫎</button>
+            <button class="btn-small btn-save" data-id="${node.id}">保存</button>
+            <button class="btn-small btn-delete" data-id="${node.id}">删除</button>
           </td>
         </tr>
       `;
@@ -143,20 +143,20 @@ class TableView {
   renderPathTable(paths) {
     let html = `
       <div class="table-header">
-        <h3>璺緞绠＄悊 (${paths.length} 涓矾寰?</h3>
+        <h3>路径管理 (${paths.length} 个路�?</h3>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
               <th>ID</th>
-              <th>鍚嶇О</th>
-              <th>绫诲瀷</th>
-              <th>鐘舵€?/th>
-              <th>璧峰鑺傜偣</th>
-              <th>缁撴潫鑺傜偣</th>
-              <th>鍒涘缓鏃堕棿</th>
-              <th>鎿嶄綔</th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>状�?/th>
+              <th>起始节点</th>
+              <th>结束节点</th>
+              <th>创建时间</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -173,8 +173,8 @@ class TableView {
           <td><select data-field="end_node_id" class="editable-input">${this.renderNodeOptions(path.end_node_id)}</select></td>
           <td>${new Date(path.created_at).toLocaleString()}</td>
           <td>
-            <button class="btn-small btn-save" data-id="${path.id}">淇濆瓨</button>
-            <button class="btn-small btn-delete" data-id="${path.id}">鍒犻櫎</button>
+            <button class="btn-small btn-save" data-id="${path.id}">保存</button>
+            <button class="btn-small btn-delete" data-id="${path.id}">删除</button>
           </td>
         </tr>
       `;
@@ -197,7 +197,7 @@ class TableView {
   }
 
   attachTableEventListeners() {
-    // 淇濆瓨鎸夐挳
+    // 保存按钮
     document.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
@@ -205,11 +205,11 @@ class TableView {
       });
     });
 
-    // 鍒犻櫎鎸夐挳
+    // 删除按钮
     document.querySelectorAll('.btn-delete').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
-        if (confirm(`纭畾鍒犻櫎杩欎釜${this.currentView === 'nodes' ? '鑺傜偣' : '璺緞'}鍚楋紵`)) {
+        if (confirm(`确定删除这个${this.currentView === 'nodes' ? '节点' : '路径'}吗？`)) {
           await this.deleteItem(id);
         }
       });
@@ -227,12 +227,12 @@ class TableView {
       const field = input.dataset.field;
       let value = input.value;
       
-      // 澶勭悊鏁板瓧绫诲瀷
+      // 处理数字类型
       if (input.type === 'number') {
         value = parseFloat(value) || 0;
       }
       
-      // 澶勭悊宓屽瀛楁 (濡?position.x)
+      // 处理嵌套字段 (�?position.x)
       if (field.includes('.')) {
         const parts = field.split('.');
         if (!data[parts[0]]) data[parts[0]] = {};
@@ -250,18 +250,18 @@ class TableView {
         body: JSON.stringify(data)
       });
 
-      if (!response.ok) throw new Error('淇濆瓨澶辫触');
+      if (!response.ok) throw new Error('保存失败');
       
-      // 鍒锋柊鏁版嵁
+      // 刷新数据
       await this.loadData();
       this.renderTable();
       
-      // 鏄剧ず鎴愬姛娑堟伅
-      this.showMessage('淇濆瓨鎴愬姛', 'success');
+      // 显示成功消息
+      this.showMessage('保存成功', 'success');
       
     } catch (error) {
-      console.error('淇濆瓨澶辫触:', error);
-      this.showMessage('淇濆瓨澶辫触: ' + error.message, 'error');
+      console.error('保存失败:', error);
+      this.showMessage('保存失败: ' + error.message, 'error');
     }
   }
 
@@ -272,31 +272,31 @@ class TableView {
         method: 'DELETE'
       });
 
-      if (!response.ok) throw new Error('鍒犻櫎澶辫触');
+      if (!response.ok) throw new Error('删除失败');
       
-      // 鍒锋柊鏁版嵁
+      // 刷新数据
       await this.loadData();
       this.renderTable();
       
-      // 鏄剧ず鎴愬姛娑堟伅
-      this.showMessage('鍒犻櫎鎴愬姛', 'success');
+      // 显示成功消息
+      this.showMessage('删除成功', 'success');
       
     } catch (error) {
-      console.error('鍒犻櫎澶辫触:', error);
-      this.showMessage('鍒犻櫎澶辫触: ' + error.message, 'error');
+      console.error('删除失败:', error);
+      this.showMessage('删除失败: ' + error.message, 'error');
     }
   }
 
   async addNewItem() {
     const data = this.currentView === 'nodes' ? 
       {
-        name: '鏂拌妭鐐?,
+        name: '新节�?,
         type: 'default',
         status: 'active',
         position: { x: 100, y: 100, z: 0 }
       } : 
       {
-        name: '鏂拌矾寰?,
+        name: '新路�?,
         type: 'default',
         status: 'active',
         start_node_id: Object.keys(this.data.nodes)[0] || '',
@@ -311,23 +311,23 @@ class TableView {
         body: JSON.stringify(data)
       });
 
-      if (!response.ok) throw new Error('鍒涘缓澶辫触');
+      if (!response.ok) throw new Error('创建失败');
       
-      // 鍒锋柊鏁版嵁
+      // 刷新数据
       await this.loadData();
       this.renderTable();
       
-      // 鏄剧ず鎴愬姛娑堟伅
-      this.showMessage('鍒涘缓鎴愬姛', 'success');
+      // 显示成功消息
+      this.showMessage('创建成功', 'success');
       
     } catch (error) {
-      console.error('鍒涘缓澶辫触:', error);
-      this.showMessage('鍒涘缓澶辫触: ' + error.message, 'error');
+      console.error('创建失败:', error);
+      this.showMessage('创建失败: ' + error.message, 'error');
     }
   }
 
   showMessage(message, type) {
-    // 鍒涘缓娑堟伅鍏冪礌
+    // 创建消息元素
     const msgEl = document.createElement('div');
     msgEl.className = `message message-${type}`;
     msgEl.textContent = message;
@@ -345,7 +345,7 @@ class TableView {
     
     document.body.appendChild(msgEl);
     
-    // 3绉掑悗鑷姩绉婚櫎
+    // 3秒后自动移除
     setTimeout(() => {
       if (msgEl.parentNode) {
         msgEl.parentNode.removeChild(msgEl);
@@ -354,7 +354,7 @@ class TableView {
   }
 }
 
-// 椤甸潰鍔犺浇瀹屾垚鍚庡垵濮嬪寲琛ㄦ牸瑙嗗浘
+// 页面加载完成后初始化表格视图
 document.addEventListener('DOMContentLoaded', () => {
   new TableView();
 });

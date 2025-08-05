@@ -1,47 +1,47 @@
-﻿# 鏈哄櫒浜鸿矾寰勭紪杈戝櫒閰嶇疆鏂囦欢
-# 鍙傝€僈ubernetes鍜孏rafana鐨勯厤缃牸寮?
+# 机器人路径编辑器配置文件
+# 参考Kubernetes和Grafana的配置格�?
 
-# 鏈嶅姟鍣ㄩ厤缃?
+# 服务器配�?
 server:
-  addr: ":8080"              # 鏈嶅姟鐩戝惉鍦板潃
-  read_timeout: "30s"        # 璇诲彇瓒呮椂
-  write_timeout: "30s"       # 鍐欏叆瓒呮椂
-  idle_timeout: "120s"       # 绌洪棽瓒呮椂
+  addr: ":8080"              # 服务监听地址
+  read_timeout: "30s"        # 读取超时
+  write_timeout: "30s"       # 写入超时
+  idle_timeout: "120s"       # 空闲超时
   tls:
-    enabled: false           # 鏄惁鍚敤TLS
-    cert_file: ""           # 璇佷功鏂囦欢璺緞
-    key_file: ""            # 绉侀挜鏂囦欢璺緞
+    enabled: false           # 是否启用TLS
+    cert_file: ""           # 证书文件路径
+    key_file: ""            # 私钥文件路径
 
-# 鏁版嵁搴撻厤缃?
+# 数据库配�?
 database:
-  type: "sqlite"                    # 鏁版嵁搴撶被鍨嬶細sqlite, mysql, postgres
-  dsn: "./data/robot-path-editor.db" # 鏁版嵁婧愬悕绉?
-  max_open_conns: 25               # 鏈€澶ф墦寮€杩炴帴鏁?
-  max_idle_conns: 5                # 鏈€澶х┖闂茶繛鎺ユ暟
-  conn_max_lifetime: "1h"          # 杩炴帴鏈€澶х敓鍛藉懆鏈?
-  auto_migrate: true               # 鏄惁鑷姩杩佺Щ鏁版嵁搴撶粨鏋?
+  type: "sqlite"                    # 数据库类型：sqlite, mysql, postgres
+  dsn: "./data/robot-path-editor.db" # 数据源名�?
+  max_open_conns: 25               # 最大打开连接�?
+  max_idle_conns: 5                # 最大空闲连接数
+  conn_max_lifetime: "1h"          # 连接最大生命周�?
+  auto_migrate: true               # 是否自动迁移数据库结�?
 
-# 鏃ュ織閰嶇疆
+# 日志配置
 logger:
-  level: "info"              # 鏃ュ織绾у埆锛歞ebug, info, warn, error
-  format: "json"             # 鏃ュ織鏍煎紡锛歫son, text
-  output: "stdout"           # 杈撳嚭鐩爣锛歴tdout, file
-  file: "./logs/app.log"     # 鏃ュ織鏂囦欢璺緞锛堝綋output涓篺ile鏃讹級
-  max_size: 100              # 鍗曚釜鏂囦欢鏈€澶уぇ灏?MB)
-  max_backups: 3             # 淇濈暀鐨勫浠芥枃浠舵暟
-  max_age: 7                 # 淇濈暀澶╂暟
-  compress: true             # 鏄惁鍘嬬缉澶囦唤鏂囦欢
+  level: "info"              # 日志级别：debug, info, warn, error
+  format: "json"             # 日志格式：json, text
+  output: "stdout"           # 输出目标：stdout, file
+  file: "./logs/app.log"     # 日志文件路径（当output为file时）
+  max_size: 100              # 单个文件最大大�?MB)
+  max_backups: 3             # 保留的备份文件数
+  max_age: 7                 # 保留天数
+  compress: true             # 是否压缩备份文件
 
-# 鐢诲竷閰嶇疆
+# 画布配置
 canvas:
-  default_width: 1920        # 榛樿鐢诲竷瀹藉害
-  default_height: 1080       # 榛樿鐢诲竷楂樺害
-  grid_size: 20              # 缃戞牸澶у皬
-  zoom_min: 0.1              # 鏈€灏忕缉鏀惧€嶆暟
-  zoom_max: 5.0              # 鏈€澶х缉鏀惧€嶆暟
-  node_radius: 20            # 榛樿鑺傜偣鍗婂緞
+  default_width: 1920        # 默认画布宽度
+  default_height: 1080       # 默认画布高度
+  grid_size: 20              # 网格大小
+  zoom_min: 0.1              # 最小缩放倍数
+  zoom_max: 5.0              # 最大缩放倍数
+  node_radius: 20            # 默认节点半径
 
-# 鐩戞帶閰嶇疆
+# 监控配置
 metrics:
-  enabled: true              # 鏄惁鍚敤鎸囨爣鏀堕泦
-  path: "/metrics"           # 鎸囨爣鎺ュ彛璺緞
+  enabled: true              # 是否启用指标收集
+  path: "/metrics"           # 指标接口路径

@@ -1,5 +1,5 @@
-// Package repositories 鍐呭瓨鑺傜偣浠撳偍瀹炵幇
-// 鐢ㄤ簬婕旂ず锛屼笉渚濊禆澶栭儴鏁版嵁搴?
+// Package repositories 内存节点仓储实现
+// 用于演示，不依赖外部数据�?
 package repositories
 
 import (
@@ -11,82 +11,82 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// memoryNodeRepository 鍐呭瓨鑺傜偣浠撳偍瀹炵幇
+// memoryNodeRepository 内存节点仓储实现
 type memoryNodeRepository struct {
 	nodes map[string]*domain.Node
 	mu    sync.RWMutex
 }
 
-// NewMemoryNodeRepository 鍒涘缓鍐呭瓨鑺傜偣浠撳偍瀹炰緥
+// NewMemoryNodeRepository 创建内存节点仓储实例
 func NewMemoryNodeRepository() NodeRepository {
 	return &memoryNodeRepository{
 		nodes: make(map[string]*domain.Node),
 	}
 }
 
-// Create 鍒涘缓鑺傜偣
+// Create 创建节点
 func (r *memoryNodeRepository) Create(ctx context.Context, node *domain.Node) error {
 	if err := node.IsValid(); err != nil {
-		return fmt.Errorf("鑺傜偣楠岃瘉澶辫触: %w", err)
+		return fmt.Errorf("节点验证失败: %w", err)
 	}
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, exists := r.nodes[string(node.ID)]; exists {
-		return fmt.Errorf("鑺傜偣宸插瓨鍦? %s", node.ID)
+		return fmt.Errorf("节点已存�? %s", node.ID)
 	}
 
 	r.nodes[string(node.ID)] = node
 	return nil
 }
 
-// GetByID 鏍规嵁ID鑾峰彇鑺傜偣
+// GetByID 根据ID获取节点
 func (r *memoryNodeRepository) GetByID(ctx context.Context, id domain.NodeID) (*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	node, exists := r.nodes[string(id)]
 	if !exists {
-		return nil, fmt.Errorf("鑺傜偣涓嶅瓨鍦? %s", id)
+		return nil, fmt.Errorf("节点不存�? %s", id)
 	}
 
-	// 杩斿洖鍓湰浠ラ伩鍏嶅苟鍙戜慨鏀?
+	// 返回副本以避免并发修�?
 	nodeCopy := *node
 	return &nodeCopy, nil
 }
 
-// Update 鏇存柊鑺傜偣
+// Update 更新节点
 func (r *memoryNodeRepository) Update(ctx context.Context, node *domain.Node) error {
 	if err := node.IsValid(); err != nil {
-		return fmt.Errorf("鑺傜偣楠岃瘉澶辫触: %w", err)
+		return fmt.Errorf("节点验证失败: %w", err)
 	}
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, exists := r.nodes[string(node.ID)]; !exists {
-		return fmt.Errorf("鑺傜偣涓嶅瓨鍦? %s", node.ID)
+		return fmt.Errorf("节点不存�? %s", node.ID)
 	}
 
 	r.nodes[string(node.ID)] = node
 	return nil
 }
 
-// Delete 鍒犻櫎鑺傜偣
+// Delete 删除节点
 func (r *memoryNodeRepository) Delete(ctx context.Context, id domain.NodeID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, exists := r.nodes[string(id)]; !exists {
-		return fmt.Errorf("鑺傜偣涓嶅瓨鍦? %s", id)
+		return fmt.Errorf("节点不存�? %s", id)
 	}
 
 	delete(r.nodes, string(id))
 	return nil
 }
 
-// CreateBatch 鎵归噺鍒涘缓鑺傜偣
+// CreateBatch 批量创建节点
 func (r *memoryNodeRepository) CreateBatch(ctx context.Context, nodes []*domain.Node) error {
 	for _, node := range nodes {
 		if err := r.Create(ctx, node); err != nil {
@@ -96,7 +96,7 @@ func (r *memoryNodeRepository) CreateBatch(ctx context.Context, nodes []*domain.
 	return nil
 }
 
-// GetByIDs 鏍规嵁ID鍒楄〃鑾峰彇鑺傜偣
+// GetByIDs 根据ID列表获取节点
 func (r *memoryNodeRepository) GetByIDs(ctx context.Context, ids []domain.NodeID) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -112,7 +112,7 @@ func (r *memoryNodeRepository) GetByIDs(ctx context.Context, ids []domain.NodeID
 	return nodes, nil
 }
 
-// UpdateBatch 鎵归噺鏇存柊鑺傜偣
+// UpdateBatch 批量更新节点
 func (r *memoryNodeRepository) UpdateBatch(ctx context.Context, nodes []*domain.Node) error {
 	for _, node := range nodes {
 		if err := r.Update(ctx, node); err != nil {
@@ -122,7 +122,7 @@ func (r *memoryNodeRepository) UpdateBatch(ctx context.Context, nodes []*domain.
 	return nil
 }
 
-// DeleteBatch 鎵归噺鍒犻櫎鑺傜偣
+// DeleteBatch 批量删除节点
 func (r *memoryNodeRepository) DeleteBatch(ctx context.Context, ids []domain.NodeID) error {
 	for _, id := range ids {
 		if err := r.Delete(ctx, id); err != nil {
@@ -132,12 +132,12 @@ func (r *memoryNodeRepository) DeleteBatch(ctx context.Context, ids []domain.Nod
 	return nil
 }
 
-// List 鍒楄〃鏌ヨ鑺傜偣
+// List 列表查询节点
 func (r *memoryNodeRepository) List(ctx context.Context, options ListOptions) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	// 棣栧厛搴旂敤杩囨护鍣?
+	// 首先应用过滤�?
 	var filtered []*domain.Node
 	for _, node := range r.nodes {
 		if r.matchesFilter(node, options.Filter) {
@@ -146,7 +146,7 @@ func (r *memoryNodeRepository) List(ctx context.Context, options ListOptions) ([
 		}
 	}
 
-	// 搴旂敤鍒嗛〉
+	// 应用分页
 	if options.PageSize > 0 {
 		start := 0
 		if options.Page > 1 {
@@ -167,7 +167,7 @@ func (r *memoryNodeRepository) List(ctx context.Context, options ListOptions) ([
 	return filtered, nil
 }
 
-// Count 缁熻鑺傜偣鏁伴噺
+// Count 统计节点数量
 func (r *memoryNodeRepository) Count(ctx context.Context, filter NodeFilter) (int64, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -182,7 +182,7 @@ func (r *memoryNodeRepository) Count(ctx context.Context, filter NodeFilter) (in
 	return count, nil
 }
 
-// GetByArea 鑾峰彇鎸囧畾鍖哄煙鍐呯殑鑺傜偣
+// GetByArea 获取指定区域内的节点
 func (r *memoryNodeRepository) GetByArea(ctx context.Context, minX, minY, maxX, maxY float64) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -199,7 +199,7 @@ func (r *memoryNodeRepository) GetByArea(ctx context.Context, minX, minY, maxX, 
 	return nodes, nil
 }
 
-// GetNearby 鑾峰彇鎸囧畾浣嶇疆闄勮繎鐨勮妭鐐?
+// GetNearby 获取指定位置附近的节�?
 func (r *memoryNodeRepository) GetNearby(ctx context.Context, position domain.Position, radius float64) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -216,15 +216,15 @@ func (r *memoryNodeRepository) GetNearby(ctx context.Context, position domain.Po
 	return nodes, nil
 }
 
-// GetConnectedNodes 鑾峰彇涓庢寚瀹氳妭鐐硅繛鎺ョ殑鎵€鏈夎妭鐐?
+// GetConnectedNodes 获取与指定节点连接的所有节�?
 func (r *memoryNodeRepository) GetConnectedNodes(ctx context.Context, nodeID domain.NodeID) ([]*domain.Node, error) {
-	// 鍐呭瓨瀹炵幇涓紝杩欓渶瑕佽矾寰勪俊鎭紝鏆傛椂杩斿洖绌哄垪琛?
+	// 内存实现中，这需要路径信息，暂时返回空列�?
 	return []*domain.Node{}, nil
 }
 
-// GetIsolatedNodes 鑾峰彇瀛ょ珛鑺傜偣
+// GetIsolatedNodes 获取孤立节点
 func (r *memoryNodeRepository) GetIsolatedNodes(ctx context.Context) ([]*domain.Node, error) {
-	// 鍐呭瓨瀹炵幇涓紝杩欓渶瑕佽矾寰勪俊鎭紝鏆傛椂杩斿洖鎵€鏈夎妭鐐?
+	// 内存实现中，这需要路径信息，暂时返回所有节�?
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -237,7 +237,7 @@ func (r *memoryNodeRepository) GetIsolatedNodes(ctx context.Context) ([]*domain.
 	return nodes, nil
 }
 
-// GetByLabels 鏍规嵁鏍囩鏌ヨ鑺傜偣
+// GetByLabels 根据标签查询节点
 func (r *memoryNodeRepository) GetByLabels(ctx context.Context, labels map[string]string) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -261,7 +261,7 @@ func (r *memoryNodeRepository) GetByLabels(ctx context.Context, labels map[strin
 	return nodes, nil
 }
 
-// GetByType 鏍规嵁绫诲瀷鏌ヨ鑺傜偣
+// GetByType 根据类型查询节点
 func (r *memoryNodeRepository) GetByType(ctx context.Context, nodeType domain.NodeType) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -277,7 +277,7 @@ func (r *memoryNodeRepository) GetByType(ctx context.Context, nodeType domain.No
 	return nodes, nil
 }
 
-// GetByStatus 鏍规嵁鐘舵€佹煡璇㈣妭鐐?
+// GetByStatus 根据状态查询节�?
 func (r *memoryNodeRepository) GetByStatus(ctx context.Context, status domain.NodeStatus) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -293,9 +293,9 @@ func (r *memoryNodeRepository) GetByStatus(ctx context.Context, status domain.No
 	return nodes, nil
 }
 
-// matchesFilter 妫€鏌ヨ妭鐐规槸鍚﹀尮閰嶈繃婊ゅ櫒
+// matchesFilter 检查节点是否匹配过滤器
 func (r *memoryNodeRepository) matchesFilter(node *domain.Node, filter NodeFilter) bool {
-	// ID杩囨护
+	// ID过滤
 	if len(filter.IDs) > 0 {
 		found := false
 		for _, id := range filter.IDs {
@@ -309,22 +309,22 @@ func (r *memoryNodeRepository) matchesFilter(node *domain.Node, filter NodeFilte
 		}
 	}
 
-	// 鍚嶇О杩囨护锛堟ā绯婃煡璇級
+	// 名称过滤（模糊查询）
 	if filter.Name != "" && !strings.Contains(strings.ToLower(node.Name), strings.ToLower(filter.Name)) {
 		return false
 	}
 
-	// 绫诲瀷杩囨护
+	// 类型过滤
 	if filter.Type != "" && node.Type != filter.Type {
 		return false
 	}
 
-	// 鐘舵€佽繃婊?
+	// 状态过�?
 	if filter.Status != "" && node.Status != filter.Status {
 		return false
 	}
 
-	// 浣嶇疆杩囨护
+	// 位置过滤
 	if filter.MinX != nil && node.Position.X < *filter.MinX {
 		return false
 	}
@@ -344,7 +344,7 @@ func (r *memoryNodeRepository) matchesFilter(node *domain.Node, filter NodeFilte
 		return false
 	}
 
-	// 鏍囩杩囨护
+	// 标签过滤
 	for key, value := range filter.Labels {
 		if nodeValue, exists := node.Metadata.Labels[key]; !exists || nodeValue != value {
 			return false

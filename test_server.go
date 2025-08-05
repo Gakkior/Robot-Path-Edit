@@ -1,4 +1,4 @@
-﻿// 绠€鍗曟祴璇曟湇鍔″櫒
+// 简单测试服务器
 package main
 
 import (
@@ -9,23 +9,23 @@ import (
 )
 
 func main() {
-	fmt.Println("鍚姩绠€鍗曟祴璇曟湇鍔″櫒...")
+	fmt.Println("启动简单测试服务器...")
 
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
-			"message": "娴嬭瘯鏈嶅姟鍣ㄨ繍琛屾甯?,
+			"message": "测试服务器运行正�?,
 		})
 	})
 
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "鏈哄櫒浜鸿矾寰勭紪杈戝櫒娴嬭瘯鐗?,
+			"message": "机器人路径编辑器测试�?,
 		})
 	})
 
-	fmt.Println("鏈嶅姟鍣ㄥ惎鍔ㄥ湪 :8080")
+	fmt.Println("服务器启动在 :8080")
 	r.Run(":8080")
 }

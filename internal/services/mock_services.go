@@ -1,5 +1,5 @@
-﻿// Package services Mock鏈嶅姟瀹炵幇
-// 鐢ㄤ簬婕旂ず妯″紡锛屾彁渚涘熀鏈姛鑳?
+// Package services Mock服务实现
+// 用于演示模式，提供基本功�?
 package services
 
 import (
@@ -8,7 +8,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// MockPathService 妯℃嫙璺緞鏈嶅姟
+// MockPathService 模拟路径服务
 type MockPathService struct{}
 
 func (s *MockPathService) CreatePath(ctx context.Context, req CreatePathRequest) (*domain.Path, error) {
@@ -17,11 +17,11 @@ func (s *MockPathService) CreatePath(ctx context.Context, req CreatePathRequest)
 }
 
 func (s *MockPathService) GetPath(ctx context.Context, id domain.PathID) (*domain.Path, error) {
-	return &domain.Path{ID: id, Name: "妯℃嫙璺緞"}, nil
+	return &domain.Path{ID: id, Name: "模拟路径"}, nil
 }
 
 func (s *MockPathService) UpdatePath(ctx context.Context, req UpdatePathRequest) (*domain.Path, error) {
-	return &domain.Path{ID: req.ID, Name: "鏇存柊鐨勬ā鎷熻矾寰?}, nil
+	return &domain.Path{ID: req.ID, Name: "更新的模拟路�?}, nil
 }
 
 func (s *MockPathService) DeletePath(ctx context.Context, id domain.PathID) error {
@@ -46,7 +46,7 @@ func (s *MockPathService) GetPathsByNode(ctx context.Context, nodeID domain.Node
 	return []*domain.Path{}, nil
 }
 
-// MockLayoutService 妯℃嫙甯冨眬鏈嶅姟
+// MockLayoutService 模拟布局服务
 type MockLayoutService struct{}
 
 func (s *MockLayoutService) ArrangeNodes(ctx context.Context, algorithm string) (map[string]domain.Position, error) {
@@ -65,7 +65,7 @@ func (s *MockLayoutService) ApplyCircularLayout(nodes []domain.Node, radius, cen
 	return nodes
 }
 
-// MockDatabaseService 妯℃嫙鏁版嵁搴撴湇鍔?
+// MockDatabaseService 模拟数据库服�?
 type MockDatabaseService struct{}
 
 func (s *MockDatabaseService) CreateDatabaseConnection(ctx context.Context, conn *domain.DatabaseConnection) error {

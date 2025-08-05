@@ -1,5 +1,5 @@
-﻿// 鏈哄櫒浜鸿矾寰勭紪杈戝櫒婕旂ず鐗堟湰
-// 浣跨敤鍐呭瓨瀛樺偍锛屾棤闇€鏁版嵁搴撲緷璧?
+// 机器人路径编辑器演示版本
+// 使用内存存储，无需数据库依�?
 package main
 
 import (
@@ -17,7 +17,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// 绠€鍖栫殑鍐呭瓨瀛樺偍
+// 简化的内存存储
 type MemoryStore struct {
 	nodes map[string]*domain.Node
 	paths map[string]*domain.Path
@@ -30,32 +30,32 @@ func NewMemoryStore() *MemoryStore {
 		paths: make(map[string]*domain.Path),
 	}
 
-	// 娣诲姞涓€浜涚ず渚嬫暟鎹?
+	// 添加一些示例数�?
 	store.addSampleData()
 	return store
 }
 
 func (s *MemoryStore) addSampleData() {
-	// 鍒涘缓绀轰緥鑺傜偣
-	node1 := domain.NewNode("璧峰鐐?, domain.Position{X: 100, Y: 100, Z: 0})
-	node2 := domain.NewNode("涓浆鐐?, domain.Position{X: 300, Y: 200, Z: 0})
-	node3 := domain.NewNode("鐩爣鐐?, domain.Position{X: 500, Y: 300, Z: 0})
+	// 创建示例节点
+	node1 := domain.NewNode("起始�?, domain.Position{X: 100, Y: 100, Z: 0})
+	node2 := domain.NewNode("中转�?, domain.Position{X: 300, Y: 200, Z: 0})
+	node3 := domain.NewNode("目标�?, domain.Position{X: 500, Y: 300, Z: 0})
 
 	s.nodes[string(node1.ID)] = node1
 	s.nodes[string(node2.ID)] = node2
 	s.nodes[string(node3.ID)] = node3
 
-	// 鍒涘缓绀轰緥璺緞
-	path1 := domain.NewPath("璺緞1", node1.ID, node2.ID)
-	path2 := domain.NewPath("璺緞2", node2.ID, node3.ID)
+	// 创建示例路径
+	path1 := domain.NewPath("路径1", node1.ID, node2.ID)
+	path2 := domain.NewPath("路径2", node2.ID, node3.ID)
 
 	s.paths[string(path1.ID)] = path1
 	s.paths[string(path2.ID)] = path2
 
-	logrus.Info("宸插姞杞界ず渚嬫暟鎹細3涓妭鐐癸紝2鏉¤矾寰?)
+	logrus.Info("已加载示例数据：3个节点，2条路�?)
 }
 
-// API澶勭悊鍣?
+// API处理�?
 type DemoHandlers struct {
 	store *MemoryStore
 }
@@ -64,7 +64,7 @@ func NewDemoHandlers(store *MemoryStore) *DemoHandlers {
 	return &DemoHandlers{store: store}
 }
 
-// 鑺傜偣鐩稿叧API
+// 节点相关API
 func (h *DemoHandlers) ListNodes(c *gin.Context) {
 	h.store.mu.RLock()
 	defer h.store.mu.RUnlock()
@@ -98,7 +98,7 @@ func (h *DemoHandlers) CreateNode(c *gin.Context) {
 	h.store.mu.Unlock()
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "鑺傜偣鍒涘缓鎴愬姛",
+		"message": "节点创建成功",
 		"node":    node,
 	})
 }
@@ -111,14 +111,14 @@ func (h *DemoHandlers) GetNode(c *gin.Context) {
 	h.store.mu.RUnlock()
 
 	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "鑺傜偣涓嶅瓨鍦?})
+		c.JSON(http.StatusNotFound, gin.H{"error": "节点不存�?})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"node": node})
 }
 
-// GetPath 鑾峰彇鍗曚釜璺緞
+// GetPath 获取单个路径
 func (h *DemoHandlers) GetPath(c *gin.Context) {
 	id := c.Param("id")
 
@@ -127,7 +127,7 @@ func (h *DemoHandlers) GetPath(c *gin.Context) {
 	h.store.mu.RUnlock()
 
 	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "璺緞涓嶅瓨鍦?})
+		c.JSON(http.StatusNotFound, gin.H{"error": "路径不存�?})
 		return
 	}
 
@@ -152,7 +152,7 @@ func (h *DemoHandlers) UpdateNode(c *gin.Context) {
 
 	node, exists := h.store.nodes[id]
 	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "鑺傜偣涓嶅瓨鍦?})
+		c.JSON(http.StatusNotFound, gin.H{"error": "节点不存�?})
 		return
 	}
 
@@ -164,7 +164,7 @@ func (h *DemoHandlers) UpdateNode(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "鑺傜偣鏇存柊鎴愬姛",
+		"message": "节点更新成功",
 		"node":    node,
 	})
 }
@@ -176,16 +176,16 @@ func (h *DemoHandlers) DeleteNode(c *gin.Context) {
 	defer h.store.mu.Unlock()
 
 	if _, exists := h.store.nodes[id]; !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "鑺傜偣涓嶅瓨鍦?})
+		c.JSON(http.StatusNotFound, gin.H{"error": "节点不存�?})
 		return
 	}
 
 	delete(h.store.nodes, id)
 
-	c.JSON(http.StatusOK, gin.H{"message": "鑺傜偣鍒犻櫎鎴愬姛"})
+	c.JSON(http.StatusOK, gin.H{"message": "节点删除成功"})
 }
 
-// UpdateNodePosition 鏇存柊鑺傜偣浣嶇疆锛堜粎鍧愭爣锛?
+// UpdateNodePosition 更新节点位置（仅坐标�?
 func (h *DemoHandlers) UpdateNodePosition(c *gin.Context) {
 	id := c.Param("id")
 	var req struct {
@@ -202,7 +202,7 @@ func (h *DemoHandlers) UpdateNodePosition(c *gin.Context) {
 	node, exists := h.store.nodes[id]
 	if !exists {
 		h.store.mu.Unlock()
-		c.JSON(http.StatusNotFound, gin.H{"error": "鑺傜偣涓嶅瓨鍦?})
+		c.JSON(http.StatusNotFound, gin.H{"error": "节点不存�?})
 		return
 	}
 	node.Position.X = req.X
@@ -210,10 +210,10 @@ func (h *DemoHandlers) UpdateNodePosition(c *gin.Context) {
 	node.Position.Z = req.Z
 	h.store.mu.Unlock()
 
-	c.JSON(http.StatusOK, gin.H{"message": "浣嶇疆宸叉洿鏂?, "node": node})
+	c.JSON(http.StatusOK, gin.H{"message": "位置已更�?, "node": node})
 }
 
-// 璺緞鐩稿叧API
+// 路径相关API
 func (h *DemoHandlers) ListPaths(c *gin.Context) {
 	h.store.mu.RLock()
 	defer h.store.mu.RUnlock()
@@ -241,14 +241,14 @@ func (h *DemoHandlers) CreatePath(c *gin.Context) {
 		return
 	}
 
-	// 妫€鏌ヨ妭鐐规槸鍚﹀瓨鍦?
+	// 检查节点是否存�?
 	h.store.mu.RLock()
 	_, startExists := h.store.nodes[string(req.StartNodeID)]
 	_, endExists := h.store.nodes[string(req.EndNodeID)]
 	h.store.mu.RUnlock()
 
 	if !startExists || !endExists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "璧峰鑺傜偣鎴栫粨鏉熻妭鐐逛笉瀛樺湪"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "起始节点或结束节点不存在"})
 		return
 	}
 
@@ -259,25 +259,25 @@ func (h *DemoHandlers) CreatePath(c *gin.Context) {
 	h.store.mu.Unlock()
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "璺緞鍒涘缓鎴愬姛",
+		"message": "路径创建成功",
 		"path":    path,
 	})
 }
 
-// DeletePath 鍒犻櫎璺緞
+// DeletePath 删除路径
 func (h *DemoHandlers) DeletePath(c *gin.Context) {
 	id := c.Param("id")
 	h.store.mu.Lock()
 	defer h.store.mu.Unlock()
 	if _, ok := h.store.paths[id]; !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "璺緞涓嶅瓨鍦?})
+		c.JSON(http.StatusNotFound, gin.H{"error": "路径不存�?})
 		return
 	}
 	delete(h.store.paths, id)
-	c.JSON(http.StatusOK, gin.H{"message": "璺緞宸插垹闄?})
+	c.JSON(http.StatusOK, gin.H{"message": "路径已删�?})
 }
 
-// UpdatePath 鏇存柊璺緞
+// UpdatePath 更新路径
 func (h *DemoHandlers) UpdatePath(c *gin.Context) {
 	id := c.Param("id")
 	var req struct {
@@ -289,7 +289,7 @@ func (h *DemoHandlers) UpdatePath(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "璇锋眰鏍煎紡閿欒: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
 		return
 	}
 
@@ -298,26 +298,26 @@ func (h *DemoHandlers) UpdatePath(c *gin.Context) {
 
 	path, exists := h.store.paths[id]
 	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "璺緞涓嶅瓨鍦?})
+		c.JSON(http.StatusNotFound, gin.H{"error": "路径不存�?})
 		return
 	}
 
-	// 楠岃瘉璧峰鍜岀粨鏉熻妭鐐瑰瓨鍦?
+	// 验证起始和结束节点存�?
 	if req.StartNodeID != "" {
 		if _, exists := h.store.nodes[req.StartNodeID]; !exists {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "璧峰鑺傜偣涓嶅瓨鍦?})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "起始节点不存�?})
 			return
 		}
 	}
 
 	if req.EndNodeID != "" {
 		if _, exists := h.store.nodes[req.EndNodeID]; !exists {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "缁撴潫鑺傜偣涓嶅瓨鍦?})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "结束节点不存�?})
 			return
 		}
 	}
 
-	// 鏇存柊璺緞灞炴€?
+	// 更新路径属�?
 	if req.Name != "" {
 		path.Name = req.Name
 	}
@@ -338,26 +338,26 @@ func (h *DemoHandlers) UpdatePath(c *gin.Context) {
 	h.store.paths[id] = path
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "璺緞鏇存柊鎴愬姛",
+		"message": "路径更新成功",
 		"path":    path,
 	})
 }
 
-// ApplyLayout 搴旂敤甯冨眬绠楁硶
+// ApplyLayout 应用布局算法
 func (h *DemoHandlers) ApplyLayout(c *gin.Context) {
 	var req struct {
 		Algorithm string `json:"algorithm" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "璇锋眰鏍煎紡閿欒: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
 		return
 	}
 
 	h.store.mu.Lock()
 	defer h.store.mu.Unlock()
 
-	// 鑾峰彇鎵€鏈夎妭鐐瑰拰璺緞
+	// 获取所有节点和路径
 	nodes := make([]domain.Node, 0, len(h.store.nodes))
 	for _, node := range h.store.nodes {
 		nodes = append(nodes, *node)
@@ -368,7 +368,7 @@ func (h *DemoHandlers) ApplyLayout(c *gin.Context) {
 		paths = append(paths, *path)
 	}
 
-	// 搴旂敤甯冨眬绠楁硶
+	// 应用布局算法
 	var updatedNodes []domain.Node
 	switch req.Algorithm {
 	case "grid":
@@ -378,11 +378,11 @@ func (h *DemoHandlers) ApplyLayout(c *gin.Context) {
 	case "circular":
 		updatedNodes = applyCircularLayout(nodes, 250.0, 500.0, 400.0)
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "涓嶆敮鎸佺殑甯冨眬绠楁硶: " + req.Algorithm})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "不支持的布局算法: " + req.Algorithm})
 		return
 	}
 
-	// 鏇存柊瀛樺偍涓殑鑺傜偣浣嶇疆
+	// 更新存储中的节点位置
 	for _, node := range updatedNodes {
 		if existingNode, ok := h.store.nodes[string(node.ID)]; ok {
 			existingNode.Position = node.Position
@@ -391,20 +391,20 @@ func (h *DemoHandlers) ApplyLayout(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":        "甯冨眬搴旂敤鎴愬姛",
+		"message":        "布局应用成功",
 		"algorithm":      req.Algorithm,
 		"affected_nodes": len(updatedNodes),
 	})
 }
 
-// GenerateNearestNeighborPaths 鐢熸垚鏈€杩戦偦璺緞
+// GenerateNearestNeighborPaths 生成最近邻路径
 func (h *DemoHandlers) GenerateNearestNeighborPaths(c *gin.Context) {
 	var req struct {
 		MaxDistance float64 `json:"max_distance"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		req.MaxDistance = 200.0 // 榛樿鍊?
+		req.MaxDistance = 200.0 // 默认�?
 	}
 
 	h.store.mu.Lock()
@@ -417,7 +417,7 @@ func (h *DemoHandlers) GenerateNearestNeighborPaths(c *gin.Context) {
 
 	paths := generateNearestNeighborPaths(nodes, req.MaxDistance)
 
-	// 娣诲姞鍒板瓨鍌?
+	// 添加到存�?
 	createdCount := 0
 	for _, path := range paths {
 		if _, exists := h.store.paths[string(path.ID)]; !exists {
@@ -427,13 +427,13 @@ func (h *DemoHandlers) GenerateNearestNeighborPaths(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":       "鏈€杩戦偦璺緞鐢熸垚鎴愬姛",
+		"message":       "最近邻路径生成成功",
 		"created_paths": createdCount,
 		"max_distance":  req.MaxDistance,
 	})
 }
 
-// GenerateFullConnectivity 鐢熸垚瀹屽叏杩為€氳矾寰?
+// GenerateFullConnectivity 生成完全连通路�?
 func (h *DemoHandlers) GenerateFullConnectivity(c *gin.Context) {
 	h.store.mu.Lock()
 	defer h.store.mu.Unlock()
@@ -445,7 +445,7 @@ func (h *DemoHandlers) GenerateFullConnectivity(c *gin.Context) {
 
 	paths := generateFullConnectivityPaths(nodes)
 
-	// 娣诲姞鍒板瓨鍌?
+	// 添加到存�?
 	createdCount := 0
 	for _, path := range paths {
 		if _, exists := h.store.paths[string(path.ID)]; !exists {
@@ -455,20 +455,20 @@ func (h *DemoHandlers) GenerateFullConnectivity(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":       "瀹屽叏杩為€氳矾寰勭敓鎴愭垚鍔?,
+		"message":       "完全连通路径生成成�?,
 		"created_paths": createdCount,
 		"total_nodes":   len(nodes),
 	})
 }
 
-// GenerateGridPaths 鐢熸垚缃戞牸璺緞
+// GenerateGridPaths 生成网格路径
 func (h *DemoHandlers) GenerateGridPaths(c *gin.Context) {
 	var req struct {
 		ConnectDiagonal bool `json:"connect_diagonal"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		req.ConnectDiagonal = false // 榛樿鍊?
+		req.ConnectDiagonal = false // 默认�?
 	}
 
 	h.store.mu.Lock()
@@ -481,7 +481,7 @@ func (h *DemoHandlers) GenerateGridPaths(c *gin.Context) {
 
 	paths := generateGridPaths(nodes, req.ConnectDiagonal)
 
-	// 娣诲姞鍒板瓨鍌?
+	// 添加到存�?
 	createdCount := 0
 	for _, path := range paths {
 		if _, exists := h.store.paths[string(path.ID)]; !exists {
@@ -491,15 +491,15 @@ func (h *DemoHandlers) GenerateGridPaths(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":          "缃戞牸璺緞鐢熸垚鎴愬姛",
+		"message":          "网格路径生成成功",
 		"created_paths":    createdCount,
 		"connect_diagonal": req.ConnectDiagonal,
 	})
 }
 
-// 甯冨眬绠楁硶瀹炵幇
+// 布局算法实现
 
-// applyGridLayout 缃戞牸甯冨眬
+// applyGridLayout 网格布局
 func applyGridLayout(nodes []domain.Node, spacing float64) []domain.Node {
 	if len(nodes) == 0 {
 		return nodes
@@ -521,20 +521,20 @@ func applyGridLayout(nodes []domain.Node, spacing float64) []domain.Node {
 	return updatedNodes
 }
 
-// applyForceDirectedLayout 鍔涘鍚戝竷灞€ (绠€鍖栫増)
+// applyForceDirectedLayout 力导向布局 (简化版)
 func applyForceDirectedLayout(nodes []domain.Node, paths []domain.Path, iterations int) []domain.Node {
 	if len(nodes) == 0 {
 		return nodes
 	}
 
-	// 鍒濆鍖栭殢鏈虹瀛?
+	// 初始化随机种�?
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// 鍙傛暟璁剧疆
+	// 参数设置
 	width, height := 1000.0, 800.0
 	k := math.Sqrt((width * height) / float64(len(nodes)))
 
-	// 鍒濆鍖栬妭鐐逛綅缃?
+	// 初始化节点位�?
 	updatedNodes := make([]domain.Node, len(nodes))
 	for i, node := range nodes {
 		updatedNode := node
@@ -545,16 +545,16 @@ func applyForceDirectedLayout(nodes []domain.Node, paths []domain.Path, iteratio
 		updatedNodes[i] = updatedNode
 	}
 
-	// 杩唬璁＄畻
+	// 迭代计算
 	for iter := 0; iter < iterations; iter++ {
 		forces := make(map[string]struct{ fx, fy float64 })
 
-		// 鍒濆鍖栧姏
+		// 初始化力
 		for i := range updatedNodes {
 			forces[string(updatedNodes[i].ID)] = struct{ fx, fy float64 }{0, 0}
 		}
 
-		// 璁＄畻鎺掓枼鍔?
+		// 计算排斥�?
 		for i := 0; i < len(updatedNodes); i++ {
 			for j := i + 1; j < len(updatedNodes); j++ {
 				node1, node2 := &updatedNodes[i], &updatedNodes[j]
@@ -578,7 +578,7 @@ func applyForceDirectedLayout(nodes []domain.Node, paths []domain.Path, iteratio
 			}
 		}
 
-		// 璁＄畻鍚稿紩鍔?
+		// 计算吸引�?
 		for _, path := range paths {
 			var node1, node2 *domain.Node
 			for i := range updatedNodes {
@@ -611,7 +611,7 @@ func applyForceDirectedLayout(nodes []domain.Node, paths []domain.Path, iteratio
 			}
 		}
 
-		// 搴旂敤鍔?
+		// 应用�?
 		temperature := 10.0 * (1.0 - float64(iter)/float64(iterations))
 		for i := range updatedNodes {
 			force := forces[string(updatedNodes[i].ID)]
@@ -622,7 +622,7 @@ func applyForceDirectedLayout(nodes []domain.Node, paths []domain.Path, iteratio
 				updatedNodes[i].Position.Y += force.fy / displacement * temperature
 			}
 
-			// 淇濇寔鍦ㄧ敾甯冭寖鍥村唴
+			// 保持在画布范围内
 			updatedNodes[i].Position.X = math.Max(50, math.Min(width-50, updatedNodes[i].Position.X))
 			updatedNodes[i].Position.Y = math.Max(50, math.Min(height-50, updatedNodes[i].Position.Y))
 		}
@@ -631,7 +631,7 @@ func applyForceDirectedLayout(nodes []domain.Node, paths []domain.Path, iteratio
 	return updatedNodes
 }
 
-// applyCircularLayout 鍦嗗舰甯冨眬
+// applyCircularLayout 圆形布局
 func applyCircularLayout(nodes []domain.Node, radius, centerX, centerY float64) []domain.Node {
 	if len(nodes) == 0 {
 		return nodes
@@ -651,9 +651,9 @@ func applyCircularLayout(nodes []domain.Node, radius, centerX, centerY float64) 
 	return updatedNodes
 }
 
-// 璺緞鐢熸垚绠楁硶瀹炵幇
+// 路径生成算法实现
 
-// generateNearestNeighborPaths 鐢熸垚鏈€杩戦偦璺緞
+// generateNearestNeighborPaths 生成最近邻路径
 func generateNearestNeighborPaths(nodes []domain.Node, maxDistance float64) []domain.Path {
 	if len(nodes) < 2 {
 		return []domain.Path{}
@@ -665,12 +665,12 @@ func generateNearestNeighborPaths(nodes []domain.Node, maxDistance float64) []do
 	}
 
 	var paths []domain.Path
-	pathSet := make(map[string]bool) // 闃叉閲嶅璺緞
+	pathSet := make(map[string]bool) // 防止重复路径
 
 	for _, node := range nodes {
 		var neighbors []neighbor
 
-		// 璁＄畻鍒版墍鏈夊叾浠栬妭鐐圭殑璺濈
+		// 计算到所有其他节点的距离
 		for _, otherNode := range nodes {
 			if node.ID != otherNode.ID {
 				distance := calculateDistance(node.Position, otherNode.Position)
@@ -683,17 +683,17 @@ func generateNearestNeighborPaths(nodes []domain.Node, maxDistance float64) []do
 			}
 		}
 
-		// 鎸夎窛绂绘帓搴?
+		// 按距离排�?
 		sort.Slice(neighbors, func(i, j int) bool {
 			return neighbors[i].distance < neighbors[j].distance
 		})
 
-		// 杩炴帴鍒版渶杩戠殑閭诲眳锛堟渶澶?涓級
+		// 连接到最近的邻居（最�?个）
 		maxNeighbors := minInt(3, len(neighbors))
 		for i := 0; i < maxNeighbors; i++ {
 			neighbor := neighbors[i]
 
-			// 鍒涘缓鍞竴鐨勮矾寰勬爣璇嗙锛堥槻姝㈤噸澶嶏級
+			// 创建唯一的路径标识符（防止重复）
 			pathKey := fmt.Sprintf("%s_%s", minString(string(node.ID), string(neighbor.nodeID)), maxString(string(node.ID), string(neighbor.nodeID)))
 			if pathSet[pathKey] {
 				continue
@@ -702,7 +702,7 @@ func generateNearestNeighborPaths(nodes []domain.Node, maxDistance float64) []do
 
 			path := domain.Path{
 				ID:          domain.PathID(fmt.Sprintf("neighbor_%s_%s", node.ID, neighbor.nodeID)),
-				Name:        fmt.Sprintf("鏈€杩戦偦: %s <-> %s", node.Name, neighbor.nodeID),
+				Name:        fmt.Sprintf("最近邻: %s <-> %s", node.Name, neighbor.nodeID),
 				Type:        "nearest_neighbor",
 				Status:      "active",
 				StartNodeID: node.ID,
@@ -721,7 +721,7 @@ func generateNearestNeighborPaths(nodes []domain.Node, maxDistance float64) []do
 	return paths
 }
 
-// generateFullConnectivityPaths 鐢熸垚瀹屽叏杩為€氳矾寰?
+// generateFullConnectivityPaths 生成完全连通路�?
 func generateFullConnectivityPaths(nodes []domain.Node) []domain.Path {
 	var paths []domain.Path
 	for i := 0; i < len(nodes); i++ {
@@ -731,7 +731,7 @@ func generateFullConnectivityPaths(nodes []domain.Node) []domain.Path {
 
 			path := domain.Path{
 				ID:          domain.PathID(fmt.Sprintf("full_%s_%s", node1.ID, node2.ID)),
-				Name:        fmt.Sprintf("杩炴帴: %s <-> %s", node1.Name, node2.Name),
+				Name:        fmt.Sprintf("连接: %s <-> %s", node1.Name, node2.Name),
 				Type:        "full_connectivity",
 				Status:      "active",
 				StartNodeID: node1.ID,
@@ -750,35 +750,35 @@ func generateFullConnectivityPaths(nodes []domain.Node) []domain.Path {
 	return paths
 }
 
-// generateGridPaths 鐢熸垚缃戞牸璺緞
+// generateGridPaths 生成网格路径
 func generateGridPaths(nodes []domain.Node, connectDiagonal bool) []domain.Path {
 	if len(nodes) == 0 {
 		return []domain.Path{}
 	}
 
-	// 鎸変綅缃帓搴忚妭鐐癸紝鍒涘缓缃戞牸缁撴瀯
+	// 按位置排序节点，创建网格结构
 	sort.Slice(nodes, func(i, j int) bool {
-		if math.Abs(nodes[i].Position.Y-nodes[j].Position.Y) < 10 { // 鍚屼竴琛?
+		if math.Abs(nodes[i].Position.Y-nodes[j].Position.Y) < 10 { // 同一�?
 			return nodes[i].Position.X < nodes[j].Position.X
 		}
 		return nodes[i].Position.Y < nodes[j].Position.Y
 	})
 
 	var paths []domain.Path
-	tolerance := 50.0 // 浣嶇疆瀹瑰樊
+	tolerance := 50.0 // 位置容差
 
-	// 姘村钩杩炴帴锛堝悓涓€琛岀殑鐩搁偦鑺傜偣锛?
+	// 水平连接（同一行的相邻节点�?
 	for i := 0; i < len(nodes)-1; i++ {
 		current := nodes[i]
 		next := nodes[i+1]
 
-		// 妫€鏌ユ槸鍚﹀湪鍚屼竴琛屼笖鐩搁偦
+		// 检查是否在同一行且相邻
 		if math.Abs(current.Position.Y-next.Position.Y) < tolerance {
 			distance := calculateDistance(current.Position, next.Position)
-			if distance < tolerance*3 { // 鐩搁偦鍒ゆ柇
+			if distance < tolerance*3 { // 相邻判断
 				path := domain.Path{
 					ID:          domain.PathID(fmt.Sprintf("grid_h_%s_%s", current.ID, next.ID)),
-					Name:        fmt.Sprintf("缃戞牸姘村钩: %s -> %s", current.Name, next.Name),
+					Name:        fmt.Sprintf("网格水平: %s -> %s", current.Name, next.Name),
 					Type:        "grid_horizontal",
 					Status:      "active",
 					StartNodeID: current.ID,
@@ -795,20 +795,20 @@ func generateGridPaths(nodes []domain.Node, connectDiagonal bool) []domain.Path 
 		}
 	}
 
-	// 鍨傜洿杩炴帴锛堝悓涓€鍒楃殑鐩搁偦鑺傜偣锛?
+	// 垂直连接（同一列的相邻节点�?
 	for i, node1 := range nodes {
 		for j, node2 := range nodes {
 			if i >= j {
 				continue
 			}
 
-			// 妫€鏌ユ槸鍚﹀湪鍚屼竴鍒?
+			// 检查是否在同一�?
 			if math.Abs(node1.Position.X-node2.Position.X) < tolerance {
 				distance := calculateDistance(node1.Position, node2.Position)
 				if distance < tolerance*3 {
 					path := domain.Path{
 						ID:          domain.PathID(fmt.Sprintf("grid_v_%s_%s", node1.ID, node2.ID)),
-						Name:        fmt.Sprintf("缃戞牸鍨傜洿: %s -> %s", node1.Name, node2.Name),
+						Name:        fmt.Sprintf("网格垂直: %s -> %s", node1.Name, node2.Name),
 						Type:        "grid_vertical",
 						Status:      "active",
 						StartNodeID: node1.ID,
@@ -826,7 +826,7 @@ func generateGridPaths(nodes []domain.Node, connectDiagonal bool) []domain.Path 
 		}
 	}
 
-	// 瀵硅绾胯繛鎺ワ紙濡傛灉鍚敤锛?
+	// 对角线连接（如果启用�?
 	if connectDiagonal {
 		for i, node1 := range nodes {
 			for j, node2 := range nodes {
@@ -838,11 +838,11 @@ func generateGridPaths(nodes []domain.Node, connectDiagonal bool) []domain.Path 
 				dx := math.Abs(node1.Position.X - node2.Position.X)
 				dy := math.Abs(node1.Position.Y - node2.Position.Y)
 
-				// 妫€鏌ユ槸鍚︿负瀵硅绾匡紙45搴﹁锛?
+				// 检查是否为对角线（45度角�?
 				if math.Abs(dx-dy) < tolerance && distance < tolerance*2 {
 					path := domain.Path{
 						ID:          domain.PathID(fmt.Sprintf("grid_d_%s_%s", node1.ID, node2.ID)),
-						Name:        fmt.Sprintf("缃戞牸瀵硅: %s -> %s", node1.Name, node2.Name),
+						Name:        fmt.Sprintf("网格对角: %s -> %s", node1.Name, node2.Name),
 						Type:        "grid_diagonal",
 						Status:      "active",
 						StartNodeID: node1.ID,
@@ -863,9 +863,9 @@ func generateGridPaths(nodes []domain.Node, connectDiagonal bool) []domain.Path 
 	return paths
 }
 
-// 宸ュ叿鍑芥暟
+// 工具函数
 
-// calculateDistance 璁＄畻涓ょ偣涔嬮棿鐨勬鍑犻噷寰楄窛绂?
+// calculateDistance 计算两点之间的欧几里得距�?
 func calculateDistance(pos1, pos2 domain.Position) float64 {
 	dx := pos1.X - pos2.X
 	dy := pos1.Y - pos2.Y
@@ -873,7 +873,7 @@ func calculateDistance(pos1, pos2 domain.Position) float64 {
 	return math.Sqrt(dx*dx + dy*dy + dz*dz)
 }
 
-// minInt 杩斿洖涓や釜鏁存暟鐨勬渶灏忓€?
+// minInt 返回两个整数的最小�?
 func minInt(a, b int) int {
 	if a < b {
 		return a
@@ -881,7 +881,7 @@ func minInt(a, b int) int {
 	return b
 }
 
-// minString 杩斿洖涓や釜瀛楃涓茬殑瀛楀吀搴忔渶灏忓€?
+// minString 返回两个字符串的字典序最小�?
 func minString(a, b string) string {
 	if a < b {
 		return a
@@ -889,7 +889,7 @@ func minString(a, b string) string {
 	return b
 }
 
-// maxString 杩斿洖涓や釜瀛楃涓茬殑瀛楀吀搴忔渶澶у€?
+// maxString 返回两个字符串的字典序最大�?
 func maxString(a, b string) string {
 	if a > b {
 		return a
@@ -897,7 +897,7 @@ func maxString(a, b string) string {
 	return b
 }
 
-// 鍋ュ悍妫€鏌?
+// 健康检�?
 func (h *DemoHandlers) HealthCheck(c *gin.Context) {
 	h.store.mu.RLock()
 	nodeCount := len(h.store.nodes)
@@ -915,12 +915,12 @@ func (h *DemoHandlers) HealthCheck(c *gin.Context) {
 	})
 }
 
-// 鑾峰彇鐢诲竷鏁版嵁
+// 获取画布数据
 func (h *DemoHandlers) GetCanvasData(c *gin.Context) {
 	h.store.mu.RLock()
 	defer h.store.mu.RUnlock()
 
-	// 鍑嗗鐢诲竷鏁版嵁
+	// 准备画布数据
 	canvasData := gin.H{
 		"nodes": h.store.nodes,
 		"paths": h.store.paths,
@@ -934,13 +934,13 @@ func (h *DemoHandlers) GetCanvasData(c *gin.Context) {
 	c.JSON(http.StatusOK, canvasData)
 }
 
-// 琛ㄦ牸瑙嗗浘HTML
+// 表格视图HTML
 const tableHTML = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>琛ㄦ牸瑙嗗浘 - 鏈哄櫒浜鸿矾寰勭紪杈戝櫒</title>
+    <title>表格视图 - 机器人路径编辑器</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1081,27 +1081,27 @@ const tableHTML = `<!DOCTYPE html>
 </head>
 <body>
     <div class="header">
-        <h1>馃搳 琛ㄦ牸瑙嗗浘</h1>
+        <h1>📊 表格视图</h1>
         <div class="nav-links">
-            <a href="/">鐢诲竷瑙嗗浘</a>
-            <a href="/table">琛ㄦ牸瑙嗗浘</a>
+            <a href="/">画布视图</a>
+            <a href="/table">表格视图</a>
         </div>
     </div>
     
     <div class="controls">
         <div class="view-toggle">
-            <button id="nodeViewBtn" class="btn active">鑺傜偣</button>
-            <button id="pathViewBtn" class="btn">璺緞</button>
+            <button id="nodeViewBtn" class="btn active">节点</button>
+            <button id="pathViewBtn" class="btn">路径</button>
         </div>
         <div class="actions">
-            <button id="refreshBtn" class="btn">馃攧 鍒锋柊</button>
-            <button id="addBtn" class="btn btn-primary">鉃?娣诲姞</button>
+            <button id="refreshBtn" class="btn">🔄 刷新</button>
+            <button id="addBtn" class="btn btn-primary">�?添加</button>
         </div>
     </div>
     
     <div class="main-content">
         <div id="tableContainer">
-            <!-- 琛ㄦ牸鍐呭灏嗗湪姝ゅ鍔ㄦ€佺敓鎴?-->
+            <!-- 表格内容将在此处动态生�?-->
         </div>
     </div>
     
@@ -1109,13 +1109,13 @@ const tableHTML = `<!DOCTYPE html>
 </body>
 </html>`
 
-// 涓婚〉闈TML
+// 主页面HTML
 const indexHTML = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鏈哄櫒浜鸿矾寰勭紪杈戝櫒 - 婕旂ず鐗?/title>
+    <title>机器人路径编辑器 - 演示�?/title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1233,70 +1233,70 @@ const indexHTML = `<!DOCTYPE html>
 </head>
 <body>
     <div id="toolbar" style="position:fixed;top:10px;left:10px;z-index:1000;display:flex;gap:10px;">
-        <button id="undoBtn" style="padding:8px 12px;background:#3498db;color:white;border:none;border-radius:4px;cursor:pointer;" disabled title="鎾ら攢 (Ctrl+Z)">鈫?鎾ら攢</button>
-        <button id="redoBtn" style="padding:8px 12px;background:#3498db;color:white;border:none;border-radius:4px;cursor:pointer;" disabled title="閲嶅仛 (Ctrl+Y)">鈫?閲嶅仛</button>
+        <button id="undoBtn" style="padding:8px 12px;background:#3498db;color:white;border:none;border-radius:4px;cursor:pointer;" disabled title="撤销 (Ctrl+Z)">�?撤销</button>
+        <button id="redoBtn" style="padding:8px 12px;background:#3498db;color:white;border:none;border-radius:4px;cursor:pointer;" disabled title="重做 (Ctrl+Y)">�?重做</button>
         <div style="border-left:1px solid rgba(255,255,255,0.3);margin:0 10px;"></div>
-        <button id="gridLayoutBtn" style="padding:8px 12px;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;" title="缃戞牸甯冨眬">馃敵 缃戞牸</button>
-        <button id="forceLayoutBtn" style="padding:8px 12px;background:#e67e22;color:white;border:none;border-radius:4px;cursor:pointer;" title="鍔涘鍚戝竷灞€">鈿?鍔涘鍚?/button>
-        <button id="circularLayoutBtn" style="padding:8px 12px;background:#9b59b6;color:white;border:none;border-radius:4px;cursor:pointer;" title="鍦嗗舰甯冨眬">猸?鍦嗗舰</button>
+        <button id="gridLayoutBtn" style="padding:8px 12px;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;" title="网格布局">🔳 网格</button>
+        <button id="forceLayoutBtn" style="padding:8px 12px;background:#e67e22;color:white;border:none;border-radius:4px;cursor:pointer;" title="力导向布局">�?力导�?/button>
+        <button id="circularLayoutBtn" style="padding:8px 12px;background:#9b59b6;color:white;border:none;border-radius:4px;cursor:pointer;" title="圆形布局">�?圆形</button>
         <div style="border-left:1px solid rgba(255,255,255,0.3);margin:0 10px;"></div>
-        <button id="nearestPathBtn" style="padding:8px 12px;background:#f39c12;color:white;border:none;border-radius:4px;cursor:pointer;" title="鐢熸垚鏈€杩戦偦璺緞">馃敆 鏈€杩戦偦</button>
-        <button id="fullConnectBtn" style="padding:8px 12px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;" title="鐢熸垚瀹屽叏杩為€?>馃暩锔?鍏ㄨ繛閫?/button>
-        <button id="gridPathBtn" style="padding:8px 12px;background:#8e44ad;color:white;border:none;border-radius:4px;cursor:pointer;" title="鐢熸垚缃戞牸璺緞">馃搻 缃戞牸璺緞</button>
+        <button id="nearestPathBtn" style="padding:8px 12px;background:#f39c12;color:white;border:none;border-radius:4px;cursor:pointer;" title="生成最近邻路径">🔗 最近邻</button>
+        <button id="fullConnectBtn" style="padding:8px 12px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;" title="生成完全连�?>🕸�?全连�?/button>
+        <button id="gridPathBtn" style="padding:8px 12px;background:#8e44ad;color:white;border:none;border-radius:4px;cursor:pointer;" title="生成网格路径">📐 网格路径</button>
     </div>
     <div id="canvas-container" style="position:fixed;left:0;top:0;width:calc(100% - 300px);height:100vh;"></div>
     <div class="container">
-        <div class="logo">馃</div>
-        <h1>鏈哄櫒浜鸿矾寰勭紪杈戝櫒</h1>
-        <p class="subtitle">鐜颁唬鍖栫殑涓夌鍏煎璺緞绠＄悊宸ュ叿</p>
+        <div class="logo">🤖</div>
+        <h1>机器人路径编辑器</h1>
+        <p class="subtitle">现代化的三端兼容路径管理工具</p>
         
-        <div class="demo-badge">馃殌 婕旂ず鐗堟湰 - 鍐呭瓨瀛樺偍妯″紡</div>
+        <div class="demo-badge">🚀 演示版本 - 内存存储模式</div>
         
         <div class="stats">
-            <h3>馃搳 瀹炴椂鏁版嵁缁熻</h3>
+            <h3>📊 实时数据统计</h3>
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-number" id="nodeCount">-</div>
-                    <div class="stat-label">鑺傜偣鏁伴噺</div>
+                    <div class="stat-label">节点数量</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-number" id="pathCount">-</div>
-                    <div class="stat-label">璺緞鏁伴噺</div>
+                    <div class="stat-label">路径数量</div>
                 </div>
             </div>
         </div>
         
         <div class="features">
             <div class="feature">
-                <h3>馃梽锔?鍐呭瓨瀛樺偍</h3>
-                <p>鏃犻渶鏁版嵁搴擄紝蹇€熷惎鍔ㄦ紨绀?/p>
+                <h3>🗄�?内存存储</h3>
+                <p>无需数据库，快速启动演�?/p>
             </div>
             <div class="feature">
-                <h3>馃帹 RESTful API</h3>
-                <p>瀹屾暣鐨勮妭鐐瑰拰璺緞绠＄悊鎺ュ彛</p>
+                <h3>🎨 RESTful API</h3>
+                <p>完整的节点和路径管理接口</p>
             </div>
             <div class="feature">
-                <h3>馃摫 鍝嶅簲寮忚璁?/h3>
-                <p>鑷€傚簲涓嶅悓璁惧灞忓箷</p>
+                <h3>📱 响应式设�?/h3>
+                <p>自适应不同设备屏幕</p>
             </div>
             <div class="feature">
-                <h3>鈿?瀹炴椂鏇存柊</h3>
-                <p>鏁版嵁鍙樺寲瀹炴椂鍚屾鏄剧ず</p>
+                <h3>�?实时更新</h3>
+                <p>数据变化实时同步显示</p>
             </div>
         </div>
         
         <div class="api-section">
-            <h3>馃敆 蹇€熷鑸?/h3>
+            <h3>🔗 快速导�?/h3>
             <div class="nav-buttons" style="display:flex;gap:1rem;margin:1rem 0;">
                 <a href="/" style="text-decoration:none;">
-                    <button class="btn" style="width:100%;">馃帹 鐢诲竷瑙嗗浘</button>
+                    <button class="btn" style="width:100%;">🎨 画布视图</button>
                 </a>
                 <a href="/table" style="text-decoration:none;">
-                    <button class="btn" style="width:100%;">馃搳 琛ㄦ牸瑙嗗浘</button>
+                    <button class="btn" style="width:100%;">📊 表格视图</button>
                 </a>
             </div>
             
-            <h3>馃攲 API 绔偣</h3>
+            <h3>🔌 API 端点</h3>
             <div class="api-endpoints">
                 <div class="api-endpoint">GET /api/v1/nodes</div>
                 <div class="api-endpoint">POST /api/v1/nodes</div>
@@ -1311,7 +1311,7 @@ const indexHTML = `<!DOCTYPE html>
     <script src="https://unpkg.com/konva@9.3.3/konva.min.js"></script>
     <script src="/static/canvas.js"></script>
     <script>
-        // 瀹炴椂鏇存柊缁熻鏁版嵁
+        // 实时更新统计数据
         function updateStats() {
             fetch('/health')
                 .then(response => response.json())
@@ -1322,44 +1322,44 @@ const indexHTML = `<!DOCTYPE html>
                     }
                 })
                 .catch(error => {
-                    console.error('鑾峰彇缁熻鏁版嵁澶辫触:', error);
+                    console.error('获取统计数据失败:', error);
                 });
         }
         
-        // 椤甸潰鍔犺浇鏃舵洿鏂颁竴娆?
+        // 页面加载时更新一�?
         updateStats();
         
-        // 姣?绉掓洿鏂颁竴娆?
+        // �?秒更新一�?
         setInterval(updateStats, 5000);
         
-        // 绠€鍗曠殑API娴嬭瘯
-        console.log('馃 鏈哄櫒浜鸿矾寰勭紪杈戝櫒婕旂ず鐗堝凡鍚姩');
-        console.log('馃摗 API娴嬭瘯:');
+        // 简单的API测试
+        console.log('🤖 机器人路径编辑器演示版已启动');
+        console.log('📡 API测试:');
         
         fetch('/api/v1/nodes')
             .then(response => response.json())
             .then(data => {
-                console.log('鉁?鑺傜偣API娴嬭瘯鎴愬姛:', data);
+                console.log('�?节点API测试成功:', data);
             })
             .catch(error => {
-                console.error('鉂?鑺傜偣API娴嬭瘯澶辫触:', error);
+                console.error('�?节点API测试失败:', error);
             });
     </script>
 </body>
 </html>`
 
 func main() {
-	// 璁剧疆鏃ュ織
+	// 设置日志
 	logrus.SetLevel(logrus.InfoLevel)
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
-	fmt.Println("馃 鏈哄櫒浜鸿矾寰勭紪杈戝櫒婕旂ず鐗堝惎鍔ㄤ腑...")
+	fmt.Println("🤖 机器人路径编辑器演示版启动中...")
 
-	// 鍒濆鍖栧唴瀛樺瓨鍌?
+	// 初始化内存存�?
 	store := NewMemoryStore()
 	handlers := NewDemoHandlers(store)
 
-	// 璁剧疆Gin璺敱
+	// 设置Gin路由
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Static("/static", "./web/static")
@@ -1378,7 +1378,7 @@ func main() {
 	}))
 	r.Use(gin.Recovery())
 
-	// CORS涓棿浠?
+	// CORS中间�?
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -1392,26 +1392,26 @@ func main() {
 		c.Next()
 	})
 
-	// 涓婚〉闈?
+	// 主页�?
 	r.GET("/", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(indexHTML))
 	})
 
-	// 琛ㄦ牸瑙嗗浘椤甸潰
+	// 表格视图页面
 	r.GET("/table", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(tableHTML))
 	})
 
-	// 鍋ュ悍妫€鏌?
+	// 健康检�?
 	r.GET("/health", handlers.HealthCheck)
 
-	// 鐢诲竷鏁版嵁
+	// 画布数据
 	r.GET("/canvas-data", handlers.GetCanvasData)
 
-	// API璺敱
+	// API路由
 	api := r.Group("/api/v1")
 	{
-		// 鑺傜偣绠＄悊
+		// 节点管理
 		nodes := api.Group("/nodes")
 		{
 			nodes.GET("", handlers.ListNodes)
@@ -1422,7 +1422,7 @@ func main() {
 			nodes.DELETE("/:id", handlers.DeleteNode)
 		}
 
-		// 璺緞绠＄悊
+		// 路径管理
 		paths := api.Group("/paths")
 		{
 			paths.GET("", handlers.ListPaths)
@@ -1432,13 +1432,13 @@ func main() {
 			paths.DELETE("/:id", handlers.DeletePath)
 		}
 
-		// 甯冨眬绠楁硶绔偣
+		// 布局算法端点
 		layout := api.Group("/layout")
 		{
 			layout.POST("/apply", handlers.ApplyLayout)
 		}
 
-		// 璺緞鐢熸垚绔偣
+		// 路径生成端点
 		pathGen := api.Group("/path-generation")
 		{
 			pathGen.POST("/nearest-neighbor", handlers.GenerateNearestNeighborPaths)
@@ -1447,18 +1447,18 @@ func main() {
 		}
 	}
 
-	// 鍚姩鏈嶅姟鍣?
+	// 启动服务�?
 	port := ":8080"
-	fmt.Printf("馃殌 婕旂ず鏈嶅姟鍣ㄥ惎鍔ㄦ垚鍔? 璁块棶鍦板潃: http://localhost%s\n", port)
-	fmt.Println("馃搳 API绔偣:")
-	fmt.Println("  - GET  /health        鍋ュ悍妫€鏌?)
-	fmt.Println("  - GET  /canvas-data   鐢诲竷鏁版嵁")
-	fmt.Println("  - GET  /api/v1/nodes  鑺傜偣鍒楄〃")
-	fmt.Println("  - POST /api/v1/nodes  鍒涘缓鑺傜偣")
-	fmt.Println("  - GET  /api/v1/paths  璺緞鍒楄〃")
-	fmt.Println("  - POST /api/v1/paths  鍒涘缓璺緞")
+	fmt.Printf("🚀 演示服务器启动成�? 访问地址: http://localhost%s\n", port)
+	fmt.Println("📊 API端点:")
+	fmt.Println("  - GET  /health        健康检�?)
+	fmt.Println("  - GET  /canvas-data   画布数据")
+	fmt.Println("  - GET  /api/v1/nodes  节点列表")
+	fmt.Println("  - POST /api/v1/nodes  创建节点")
+	fmt.Println("  - GET  /api/v1/paths  路径列表")
+	fmt.Println("  - POST /api/v1/paths  创建路径")
 
 	if err := r.Run(port); err != nil {
-		logrus.WithError(err).Fatal("鏈嶅姟鍣ㄥ惎鍔ㄥけ璐?)
+		logrus.WithError(err).Fatal("服务器启动失�?)
 	}
 }

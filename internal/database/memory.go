@@ -1,5 +1,5 @@
-// Package database 鍐呭瓨鏁版嵁搴撳疄鐜?
-// 鐢ㄤ簬婕旂ず鍜屽紑鍙戠幆澧冿紝涓嶄緷璧栧閮ㄦ暟鎹簱
+// Package database 内存数据库实�?
+// 用于演示和开发环境，不依赖外部数据库
 package database
 
 import (
@@ -13,7 +13,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// memoryDatabase 鍐呭瓨鏁版嵁搴撳疄鐜?
+// memoryDatabase 内存数据库实�?
 type memoryDatabase struct {
 	nodes       map[string]*domain.Node
 	paths       map[string]*domain.Path
@@ -22,7 +22,7 @@ type memoryDatabase struct {
 	mu          sync.RWMutex
 }
 
-// NewMemoryDatabase 鍒涘缓鍐呭瓨鏁版嵁搴撳疄渚?
+// NewMemoryDatabase 创建内存数据库实�?
 func NewMemoryDatabase() Database {
 	return &memoryDatabase{
 		nodes:       make(map[string]*domain.Node),
@@ -32,11 +32,11 @@ func NewMemoryDatabase() Database {
 	}
 }
 
-// NewMemoryDatabaseFromConfig 浠庨厤缃垱寤哄唴瀛樻暟鎹簱锛堝吋瀹规帴鍙ｏ級
+// NewMemoryDatabaseFromConfig 从配置创建内存数据库（兼容接口）
 func NewMemoryDatabaseFromConfig(cfg config.DatabaseConfig) (Database, error) {
 	db := NewMemoryDatabase()
 
-	// 鑷姩杩佺Щ锛堝湪鍐呭瓨鏁版嵁搴撲腑鏄┖鎿嶄綔锛?
+	// 自动迁移（在内存数据库中是空操作�?
 	if cfg.AutoMigrate {
 		if err := db.AutoMigrate(); err != nil {
 			return nil, err
@@ -46,22 +46,22 @@ func NewMemoryDatabaseFromConfig(cfg config.DatabaseConfig) (Database, error) {
 	return db, nil
 }
 
-// DB 杩斿洖nil锛堝唴瀛樻暟鎹簱涓嶉渶瑕丟ORM锛?
+// DB 返回nil（内存数据库不需要GORM�?
 func (m *memoryDatabase) DB() interface{} {
 	return nil
 }
 
-// GORMDB 杩斿洖nil锛堝唴瀛樻暟鎹簱涓嶄娇鐢℅ORM锛?
+// GORMDB 返回nil（内存数捺�不使用GORM�?
 func (m *memoryDatabase) GORMDB() *gorm.DB {
 	return nil
 }
 
-// Close 鍏抽棴鏁版嵁搴擄紙鍐呭瓨鏁版嵁搴撴棤闇€鍏抽棴锛?
+// Close 关闭数据库（内存数据库无需关闭�?
 func (m *memoryDatabase) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// 娓呯悊鍐呭瓨
+	// 清理内存
 	m.nodes = make(map[string]*domain.Node)
 	m.paths = make(map[string]*domain.Path)
 	m.connections = make(map[string]*domain.DatabaseConnection)
@@ -70,81 +70,81 @@ func (m *memoryDatabase) Close() error {
 	return nil
 }
 
-// Ping 妫€鏌ユ暟鎹簱杩炴帴鐘舵€侊紙鍐呭瓨鏁版嵁搴撴€绘槸鍙敤锛?
+// Ping 检查数据库连接状态（内存数据库总是可用�?
 func (m *memoryDatabase) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Transaction 鎵ц浜嬪姟鎿嶄綔锛堝唴瀛樻暟鎹簱绠€鍖栧疄鐜帮級
+// Transaction 执行事务操作（内存数据库简化实现）
 func (m *memoryDatabase) Transaction(ctx context.Context, fn func(tx interface{}) error) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// 鍦ㄥ唴瀛樻暟鎹簱涓紝鐩存帴鎵ц鍑芥暟
+	// 在内存数据库中，直接执行函数
 	return fn(m)
 }
 
-// AutoMigrate 鑷姩杩佺Щ鏁版嵁搴撶粨鏋勶紙鍐呭瓨鏁版嵁搴撴棤闇€杩佺Щ锛?
+// AutoMigrate 自动迁移数据库结构（内存数据库无需迁移�?
 func (m *memoryDatabase) AutoMigrate() error {
-	// 鍐呭瓨鏁版嵁搴撲笉闇€瑕佽縼绉伙紝鐩存帴杩斿洖鎴愬姛
+	// 内存数据库不需要迁移，直接返回成功
 	return nil
 }
 
-// 鑺傜偣鎿嶄綔
+// 节点操作
 
-// CreateNode 鍒涘缓鑺傜偣
+// CreateNode 创建节点
 func (m *memoryDatabase) CreateNode(node *domain.Node) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, exists := m.nodes[string(node.ID)]; exists {
-		return fmt.Errorf("鑺傜偣宸插瓨鍦? %s", node.ID)
+		return fmt.Errorf("节点已存�? %s", node.ID)
 	}
 
 	m.nodes[string(node.ID)] = node
 	return nil
 }
 
-// GetNode 鑾峰彇鑺傜偣
+// GetNode 获取节点
 func (m *memoryDatabase) GetNode(id string) (*domain.Node, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	node, exists := m.nodes[id]
 	if !exists {
-		return nil, fmt.Errorf("鑺傜偣涓嶅瓨鍦? %s", id)
+		return nil, fmt.Errorf("节点不存�? %s", id)
 	}
 
 	return node, nil
 }
 
-// UpdateNode 鏇存柊鑺傜偣
+// UpdateNode 更新节点
 func (m *memoryDatabase) UpdateNode(node *domain.Node) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, exists := m.nodes[string(node.ID)]; !exists {
-		return fmt.Errorf("鑺傜偣涓嶅瓨鍦? %s", node.ID)
+		return fmt.Errorf("节点不存�? %s", node.ID)
 	}
 
 	m.nodes[string(node.ID)] = node
 	return nil
 }
 
-// DeleteNode 鍒犻櫎鑺傜偣
+// DeleteNode 删除节点
 func (m *memoryDatabase) DeleteNode(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, exists := m.nodes[id]; !exists {
-		return fmt.Errorf("鑺傜偣涓嶅瓨鍦? %s", id)
+		return fmt.Errorf("节点不存�? %s", id)
 	}
 
 	delete(m.nodes, id)
 	return nil
 }
 
-// ListNodes 鍒楀嚭鎵€鏈夎妭鐐?
+// ListNodes 列出所有节�?
 func (m *memoryDatabase) ListNodes() ([]*domain.Node, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -157,61 +157,61 @@ func (m *memoryDatabase) ListNodes() ([]*domain.Node, error) {
 	return nodes, nil
 }
 
-// 璺緞鎿嶄綔
+// 路径操作
 
-// CreatePath 鍒涘缓璺緞
+// CreatePath 创建路径
 func (m *memoryDatabase) CreatePath(path *domain.Path) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, exists := m.paths[string(path.ID)]; exists {
-		return fmt.Errorf("璺緞宸插瓨鍦? %s", path.ID)
+		return fmt.Errorf("路径已存�? %s", path.ID)
 	}
 
 	m.paths[string(path.ID)] = path
 	return nil
 }
 
-// GetPath 鑾峰彇璺緞
+// GetPath 获取路径
 func (m *memoryDatabase) GetPath(id string) (*domain.Path, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	path, exists := m.paths[id]
 	if !exists {
-		return nil, fmt.Errorf("璺緞涓嶅瓨鍦? %s", id)
+		return nil, fmt.Errorf("路径不存�? %s", id)
 	}
 
 	return path, nil
 }
 
-// UpdatePath 鏇存柊璺緞
+// UpdatePath 更新路径
 func (m *memoryDatabase) UpdatePath(path *domain.Path) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, exists := m.paths[string(path.ID)]; !exists {
-		return fmt.Errorf("璺緞涓嶅瓨鍦? %s", path.ID)
+		return fmt.Errorf("路径不存�? %s", path.ID)
 	}
 
 	m.paths[string(path.ID)] = path
 	return nil
 }
 
-// DeletePath 鍒犻櫎璺緞
+// DeletePath 删除路径
 func (m *memoryDatabase) DeletePath(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, exists := m.paths[id]; !exists {
-		return fmt.Errorf("璺緞涓嶅瓨鍦? %s", id)
+		return fmt.Errorf("路径不存�? %s", id)
 	}
 
 	delete(m.paths, id)
 	return nil
 }
 
-// ListPaths 鍒楀嚭鎵€鏈夎矾寰?
+// ListPaths 列出所有路�?
 func (m *memoryDatabase) ListPaths() ([]*domain.Path, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

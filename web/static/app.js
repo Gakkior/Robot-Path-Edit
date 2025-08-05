@@ -1,10 +1,10 @@
-﻿// 鏈哄櫒浜鸿矾寰勭紪杈戝櫒鍓嶇搴旂敤
-console.log('鏈哄櫒浜鸿矾寰勭紪杈戝櫒鍓嶇搴旂敤鍔犺浇瀹屾垚');
+// 机器人路径编辑器前端应用
+console.log('机器人路径编辑器前端应用加载完成');
 
-// API鍩虹閰嶇疆
+// API基础配置
 const API_BASE = '/api/v1';
 
-// 绠€鍗曠殑API瀹㈡埛绔?
+// 简单的API客户�?
 class ApiClient {
     async get(endpoint) {
         const response = await fetch(`${API_BASE}${endpoint}`);
@@ -31,24 +31,24 @@ class ApiClient {
 
 const api = new ApiClient();
 
-// 椤甸潰鍔犺浇瀹屾垚鍚庡垵濮嬪寲
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('椤甸潰鍔犺浇瀹屾垚锛屽垵濮嬪寲搴旂敤...');
+    console.log('页面加载完成，初始化应用...');
     
-    // 娴嬭瘯API杩炴帴
+    // 测试API连接
     api.get('/nodes')
         .then(data => {
-            console.log('鑺傜偣鏁版嵁:', data);
+            console.log('节点数据:', data);
         })
         .catch(error => {
-            console.error('鑾峰彇鑺傜偣鏁版嵁澶辫触:', error);
+            console.error('获取节点数据失败:', error);
         });
         
     api.get('/paths')
         .then(data => {
-            console.log('璺緞鏁版嵁:', data);
+            console.log('路径数据:', data);
         })
         .catch(error => {
-            console.error('鑾峰彇璺緞鏁版嵁澶辫触:', error);
+            console.error('获取路径数据失败:', error);
         });
 });
