@@ -9,216 +9,207 @@ import (
 
 	"gorm.io/gorm"
 
-	"robot-path-editor/internal/config"
 	"robot-path-editor/internal/domain"
 )
 
-// memoryDatabase 内存数据库实�?
+// memoryDatabase 内存数据库实现
 type memoryDatabase struct {
-	nodes       map[string]*domain.Node
-	paths       map[string]*domain.Path
-	connections map[string]*domain.DatabaseConnection
-	mappings    map[string]*domain.TableMapping
-	mu          sync.RWMutex
+	nodes   map[domain.NodeID]*domain.Node
+	paths   map[domain.PathID]*domain.Path
+	nodesMu sync.RWMutex
+	pathsMu sync.RWMutex
 }
 
-// NewMemoryDatabase 创建内存数据库实�?
+// NewMemoryDatabase 创建内存数据库实例
 func NewMemoryDatabase() Database {
 	return &memoryDatabase{
-		nodes:       make(map[string]*domain.Node),
-		paths:       make(map[string]*domain.Path),
-		connections: make(map[string]*domain.DatabaseConnection),
-		mappings:    make(map[string]*domain.TableMapping),
+		nodes: make(map[domain.NodeID]*domain.Node),
+		paths: make(map[domain.PathID]*domain.Path),
 	}
 }
 
-// NewMemoryDatabaseFromConfig 从配置创建内存数据库（兼容接口）
-func NewMemoryDatabaseFromConfig(cfg config.DatabaseConfig) (Database, error) {
-	db := NewMemoryDatabase()
-
-	// 自动迁移（在内存数据库中是空操作�?
-	if cfg.AutoMigrate {
-		if err := db.AutoMigrate(); err != nil {
-			return nil, err
-		}
-	}
-
-	return db, nil
-}
-
-// DB 返回nil（内存数据库不需要GORM�?
-func (m *memoryDatabase) DB() interface{} {
+// Connect 连接数据库（内存数据库无需连接）
+func (db *memoryDatabase) Connect() error {
 	return nil
 }
 
-// GORMDB 返回nil（内存数捺�不使用GORM�?
-func (m *memoryDatabase) GORMDB() *gorm.DB {
+// Close 关闭数据库连接（内存数据库无需关闭）
+func (db *memoryDatabase) Close() error {
 	return nil
 }
 
-// Close 关闭数据库（内存数据库无需关闭�?
-func (m *memoryDatabase) Close() error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// 清理内存
-	m.nodes = make(map[string]*domain.Node)
-	m.paths = make(map[string]*domain.Path)
-	m.connections = make(map[string]*domain.DatabaseConnection)
-	m.mappings = make(map[string]*domain.TableMapping)
-
+// AutoMigrate 自动迁移（在内存数据库中是空操作）
+func (db *memoryDatabase) AutoMigrate(dst ...interface{}) error {
+	// 内存数据库不需要迁移
 	return nil
 }
 
-// Ping 检查数据库连接状态（内存数据库总是可用�?
-func (m *memoryDatabase) Ping(ctx context.Context) error {
+// Transaction 事务执行
+func (db *memoryDatabase) Transaction(ctx context.Context, fn func(tx interface{}) error) error {
+	// 简化实现：内存数据库直接执行
+	return fn(db)
+}
+
+// DB 返回nil（内存数据库不需要GORM）
+func (db *memoryDatabase) DB() interface{} {
 	return nil
 }
 
-// Transaction 执行事务操作（内存数据库简化实现）
-func (m *memoryDatabase) Transaction(ctx context.Context, fn func(tx interface{}) error) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// 在内存数据库中，直接执行函数
-	return fn(m)
-}
-
-// AutoMigrate 自动迁移数据库结构（内存数据库无需迁移�?
-func (m *memoryDatabase) AutoMigrate() error {
-	// 内存数据库不需要迁移，直接返回成功
+// GORMDB 返回nil（内存数据库不使用GORM）
+func (db *memoryDatabase) GORMDB() *gorm.DB {
 	return nil
 }
 
-// 节点操作
+// Ping 检查数据库连接状态（内存数据库总是可用）
+func (db *memoryDatabase) Ping() error {
+	return nil
+}
+
+// === 节点操作 ===
 
 // CreateNode 创建节点
-func (m *memoryDatabase) CreateNode(node *domain.Node) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (db *memoryDatabase) CreateNode(node *domain.Node) error {
+	db.nodesMu.Lock()
+	defer db.nodesMu.Unlock()
 
-	if _, exists := m.nodes[string(node.ID)]; exists {
-		return fmt.Errorf("节点已存�? %s", node.ID)
+	if _, exists := db.nodes[node.ID]; exists {
+		return fmt.Errorf("节点已存在: %s", node.ID)
 	}
 
-	m.nodes[string(node.ID)] = node
+	// 创建副本以避免外部修改
+	nodeCopy := *node
+	db.nodes[node.ID] = &nodeCopy
 	return nil
 }
 
 // GetNode 获取节点
-func (m *memoryDatabase) GetNode(id string) (*domain.Node, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (db *memoryDatabase) GetNode(id domain.NodeID) (*domain.Node, error) {
+	db.nodesMu.RLock()
+	defer db.nodesMu.RUnlock()
 
-	node, exists := m.nodes[id]
+	node, exists := db.nodes[id]
 	if !exists {
-		return nil, fmt.Errorf("节点不存�? %s", id)
+		return nil, fmt.Errorf("节点不存在: %s", id)
 	}
 
-	return node, nil
+	// 返回副本以避免并发修改
+	nodeCopy := *node
+	return &nodeCopy, nil
 }
 
 // UpdateNode 更新节点
-func (m *memoryDatabase) UpdateNode(node *domain.Node) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (db *memoryDatabase) UpdateNode(node *domain.Node) error {
+	db.nodesMu.Lock()
+	defer db.nodesMu.Unlock()
 
-	if _, exists := m.nodes[string(node.ID)]; !exists {
-		return fmt.Errorf("节点不存�? %s", node.ID)
+	if _, exists := db.nodes[node.ID]; !exists {
+		return fmt.Errorf("节点不存在: %s", node.ID)
 	}
 
-	m.nodes[string(node.ID)] = node
+	// 创建副本
+	nodeCopy := *node
+	db.nodes[node.ID] = &nodeCopy
 	return nil
 }
 
 // DeleteNode 删除节点
-func (m *memoryDatabase) DeleteNode(id string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (db *memoryDatabase) DeleteNode(id domain.NodeID) error {
+	db.nodesMu.Lock()
+	defer db.nodesMu.Unlock()
 
-	if _, exists := m.nodes[id]; !exists {
-		return fmt.Errorf("节点不存�? %s", id)
+	if _, exists := db.nodes[id]; !exists {
+		return fmt.Errorf("节点不存在: %s", id)
 	}
 
-	delete(m.nodes, id)
+	delete(db.nodes, id)
 	return nil
 }
 
-// ListNodes 列出所有节�?
-func (m *memoryDatabase) ListNodes() ([]*domain.Node, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+// ListNodes 列出所有节点
+func (db *memoryDatabase) ListNodes() ([]*domain.Node, error) {
+	db.nodesMu.RLock()
+	defer db.nodesMu.RUnlock()
 
-	nodes := make([]*domain.Node, 0, len(m.nodes))
-	for _, node := range m.nodes {
-		nodes = append(nodes, node)
+	nodes := make([]*domain.Node, 0, len(db.nodes))
+	for _, node := range db.nodes {
+		// 返回副本
+		nodeCopy := *node
+		nodes = append(nodes, &nodeCopy)
 	}
 
 	return nodes, nil
 }
 
-// 路径操作
+// === 路径操作 ===
 
 // CreatePath 创建路径
-func (m *memoryDatabase) CreatePath(path *domain.Path) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (db *memoryDatabase) CreatePath(path *domain.Path) error {
+	db.pathsMu.Lock()
+	defer db.pathsMu.Unlock()
 
-	if _, exists := m.paths[string(path.ID)]; exists {
-		return fmt.Errorf("路径已存�? %s", path.ID)
+	if _, exists := db.paths[path.ID]; exists {
+		return fmt.Errorf("路径已存在: %s", path.ID)
 	}
 
-	m.paths[string(path.ID)] = path
+	// 创建副本
+	pathCopy := *path
+	db.paths[path.ID] = &pathCopy
 	return nil
 }
 
 // GetPath 获取路径
-func (m *memoryDatabase) GetPath(id string) (*domain.Path, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (db *memoryDatabase) GetPath(id domain.PathID) (*domain.Path, error) {
+	db.pathsMu.RLock()
+	defer db.pathsMu.RUnlock()
 
-	path, exists := m.paths[id]
+	path, exists := db.paths[id]
 	if !exists {
-		return nil, fmt.Errorf("路径不存�? %s", id)
+		return nil, fmt.Errorf("路径不存在: %s", id)
 	}
 
-	return path, nil
+	// 返回副本
+	pathCopy := *path
+	return &pathCopy, nil
 }
 
 // UpdatePath 更新路径
-func (m *memoryDatabase) UpdatePath(path *domain.Path) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (db *memoryDatabase) UpdatePath(path *domain.Path) error {
+	db.pathsMu.Lock()
+	defer db.pathsMu.Unlock()
 
-	if _, exists := m.paths[string(path.ID)]; !exists {
-		return fmt.Errorf("路径不存�? %s", path.ID)
+	if _, exists := db.paths[path.ID]; !exists {
+		return fmt.Errorf("路径不存在: %s", path.ID)
 	}
 
-	m.paths[string(path.ID)] = path
+	// 创建副本
+	pathCopy := *path
+	db.paths[path.ID] = &pathCopy
 	return nil
 }
 
 // DeletePath 删除路径
-func (m *memoryDatabase) DeletePath(id string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (db *memoryDatabase) DeletePath(id domain.PathID) error {
+	db.pathsMu.Lock()
+	defer db.pathsMu.Unlock()
 
-	if _, exists := m.paths[id]; !exists {
-		return fmt.Errorf("路径不存�? %s", id)
+	if _, exists := db.paths[id]; !exists {
+		return fmt.Errorf("路径不存在: %s", id)
 	}
 
-	delete(m.paths, id)
+	delete(db.paths, id)
 	return nil
 }
 
-// ListPaths 列出所有路�?
-func (m *memoryDatabase) ListPaths() ([]*domain.Path, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+// ListPaths 列出所有路径
+func (db *memoryDatabase) ListPaths() ([]*domain.Path, error) {
+	db.pathsMu.RLock()
+	defer db.pathsMu.RUnlock()
 
-	paths := make([]*domain.Path, 0, len(m.paths))
-	for _, path := range m.paths {
-		paths = append(paths, path)
+	paths := make([]*domain.Path, 0, len(db.paths))
+	for _, path := range db.paths {
+		// 返回副本
+		pathCopy := *path
+		paths = append(paths, &pathCopy)
 	}
 
 	return paths, nil

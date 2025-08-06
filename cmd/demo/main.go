@@ -37,9 +37,14 @@ func NewMemoryStore() *MemoryStore {
 
 func (s *MemoryStore) addSampleData() {
 	// 创建示例节点
-	node1 := domain.NewNode("起始点", domain.Position{X: 100, Y: 100, Z: 0})
-	node2 := domain.NewNode("中转点", domain.Position{X: 300, Y: 200, Z: 0})
-	node3 := domain.NewNode("目标点", domain.Position{X: 500, Y: 300, Z: 0})
+	node1 := domain.NewNode("起始点", "point")
+	node1.Position = domain.Position{X: 100, Y: 100, Z: 0}
+
+	node2 := domain.NewNode("中转点", "waypoint")
+	node2.Position = domain.Position{X: 300, Y: 200, Z: 0}
+
+	node3 := domain.NewNode("目标点", "point")
+	node3.Position = domain.Position{X: 500, Y: 300, Z: 0}
 
 	s.nodes[string(node1.ID)] = node1
 	s.nodes[string(node2.ID)] = node2
@@ -83,6 +88,7 @@ func (h *DemoHandlers) ListNodes(c *gin.Context) {
 func (h *DemoHandlers) CreateNode(c *gin.Context) {
 	var req struct {
 		Name     string          `json:"name" binding:"required"`
+		Type     string          `json:"type,omitempty"`
 		Position domain.Position `json:"position"`
 	}
 
@@ -91,7 +97,14 @@ func (h *DemoHandlers) CreateNode(c *gin.Context) {
 		return
 	}
 
-	node := domain.NewNode(req.Name, req.Position)
+	// 默认节点类型
+	nodeType := req.Type
+	if nodeType == "" {
+		nodeType = "point"
+	}
+
+	node := domain.NewNode(req.Name, nodeType)
+	node.Position = req.Position
 
 	h.store.mu.Lock()
 	h.store.nodes[string(node.ID)] = node

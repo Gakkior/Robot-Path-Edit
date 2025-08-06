@@ -57,20 +57,20 @@ func Init(cfg config.LoggerConfig) {
 	// 设置输出目标
 	switch strings.ToLower(cfg.Output) {
 	case "file":
-		if cfg.File == "" {
+		if cfg.FilePath == "" {
 			logrus.Warn("日志文件路径为空，使用默认路径")
-			cfg.File = "./logs/app.log"
+			cfg.FilePath = "./logs/app.log"
 		}
 
 		// 确保日志目录存在
-		logDir := filepath.Dir(cfg.File)
+		logDir := filepath.Dir(cfg.FilePath)
 		if err := os.MkdirAll(logDir, 0755); err != nil {
 			logrus.WithError(err).Error("创建日志目录失败")
 			return
 		}
 
 		// 打开日志文件
-		file, err := os.OpenFile(cfg.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		file, err := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			logrus.WithError(err).Error("打开日志文件失败")
 			return

@@ -20,12 +20,12 @@ import (
 	"github.com/google/uuid"
 )
 
-// Node 表示图中的一个节�?点位
+// Node 表示图中的一个节点点位
 // 这是一个聚合根，包含了点位的所有业务逻辑
 //
 // 设计参考：
 // - Kubernetes Pod的元数据结构
-// - CAD软件中的几何点表�?
+// - CAD软件中的几何点表示
 type Node struct {
 	// 基础标识信息
 	ID     NodeID     `json:"id" gorm:"primaryKey;type:varchar(36)"`
@@ -33,278 +33,301 @@ type Node struct {
 	Type   NodeType   `json:"type" gorm:"type:varchar(20);not null;default:'point'"`
 	Status NodeStatus `json:"status" gorm:"type:varchar(20);not null;default:'active'"`
 
-	// 位置信息 - 支持2D�?D坐标
+	// 位置信息 - 支持2D/3D坐标
 	Position Position `json:"position" gorm:"embedded;embeddedPrefix:pos_"`
 
-	// 机器人相关的6轴坐标信�?
+	// 机器人相关的6轴坐标信息
 	RobotCoords *RobotCoordinates `json:"robot_coords,omitempty" gorm:"embedded;embeddedPrefix:robot_"`
 
-	// 扩展属�?- 支持动态字段，类似Kubernetes的Labels
+	// 扩展属性 - 支持动态字段，类似Kubernetes的Labels
 	Properties map[string]interface{} `json:"properties,omitempty" gorm:"serializer:json"`
 
 	// 样式配置
 	Style NodeStyle `json:"style" gorm:"embedded;embeddedPrefix:style_"`
 
-	// 元数�?- 参考Kubernetes的ObjectMeta
+	// 元数据 - 参考Kubernetes的ObjectMeta
 	Metadata ObjectMeta `json:"metadata" gorm:"embedded"`
 }
 
-// Path 表示两个节点之间的路�?连接
-// 聚合根，管理路径的完整生命周�?
+// Path 表示两个节点之间的路径连接
+// 聚合根，管理路径的完整生命周期
+//
+// 设计参考：
+// - 图论中的边（Edge）概念
+// - 导航系统中的路径规划
+// - 网络拓扑中的连接关系
 type Path struct {
 	// 基础标识信息
 	ID     PathID     `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	Name   string     `json:"name" gorm:"type:varchar(100)"`
-	Type   PathType   `json:"type" gorm:"type:varchar(20);not null;default:'direct'"`
+	Name   string     `json:"name" gorm:"type:varchar(100);not null"`
+	Type   PathType   `json:"type" gorm:"type:varchar(20);not null;default:'normal'"`
 	Status PathStatus `json:"status" gorm:"type:varchar(20);not null;default:'active'"`
 
-	// 连接信息
-	StartNodeID NodeID        `json:"start_node_id" gorm:"type:varchar(36);not null;index"`
-	EndNodeID   NodeID        `json:"end_node_id" gorm:"type:varchar(36);not null;index"`
-	Direction   PathDirection `json:"direction" gorm:"type:varchar(20);not null;default:'bidirectional'"`
+	// 连接关系
+	StartNodeID NodeID `json:"start_node_id" gorm:"type:varchar(36);not null;index"`
+	EndNodeID   NodeID `json:"end_node_id" gorm:"type:varchar(36);not null;index"`
 
-	// 路径属�?
-	Weight   float64 `json:"weight" gorm:"type:decimal(10,2);default:1.0"` // 权重/代价
-	Length   float64 `json:"length,omitempty" gorm:"type:decimal(10,2)"`   // 实际长度
-	MaxSpeed float64 `json:"max_speed,omitempty" gorm:"type:decimal(8,2)"` // 最大速度
+	// 路径属性
+	Weight    float64   `json:"weight" gorm:"type:decimal(12,6);default:0"`
+	Length    float64   `json:"length,omitempty" gorm:"type:decimal(12,6)"`
+	Direction string    `json:"direction,omitempty" gorm:"type:varchar(20);default:'bidirectional'"`
+	CurveType CurveType `json:"curve_type" gorm:"type:varchar(20);default:'linear'"`
 
-	// 路径几何信息
-	Waypoints []Position `json:"waypoints,omitempty" gorm:"serializer:json"`          // 中间�?
-	CurveType CurveType  `json:"curve_type" gorm:"type:varchar(20);default:'linear'"` // 曲线类型
-
-	// 扩展属�?
-	Properties map[string]interface{} `json:"properties,omitempty" gorm:"serializer:json"`
+	// 路径关键点
+	Waypoints []Position `json:"waypoints,omitempty" gorm:"serializer:json"` // 中间点
 
 	// 样式配置
 	Style PathStyle `json:"style" gorm:"embedded;embeddedPrefix:style_"`
 
-	// 元数�?
+	// 扩展属性
+	Properties map[string]interface{} `json:"properties,omitempty" gorm:"serializer:json"`
+
+	// 元数据
 	Metadata ObjectMeta `json:"metadata" gorm:"embedded"`
 }
 
-// DatabaseConnection 表示数据库连接配�?
-// 值对象，封装数据库连接的所有信�?
+// DatabaseConnection 表示数据库连接配置
+// 值对象，封装数据库连接的所有信息
 type DatabaseConnection struct {
-	ID       string            `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	Name     string            `json:"name" gorm:"type:varchar(100);not null"`
-	Type     string            `json:"type" gorm:"type:varchar(20);not null"` // sqlite, mysql, postgres
-	DSN      string            `json:"dsn" gorm:"type:text;not null"`
-	Options  map[string]string `json:"options,omitempty" gorm:"serializer:json"`
-	Metadata ObjectMeta        `json:"metadata" gorm:"embedded"`
+	ID         string            `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	Name       string            `json:"name" gorm:"type:varchar(100);not null"`
+	Type       string            `json:"type" gorm:"type:varchar(20);not null"`
+	Host       string            `json:"host" gorm:"type:varchar(255);not null"`
+	Port       int               `json:"port" gorm:"type:int;not null"`
+	Database   string            `json:"database" gorm:"type:varchar(100);not null"`
+	Username   string            `json:"username" gorm:"type:varchar(100);not null"`
+	Password   string            `json:"password" gorm:"type:varchar(255);not null"`
+	Properties map[string]string `json:"properties,omitempty" gorm:"serializer:json"`
 }
 
-// TableMapping 表示表字段映射配�?
-// 值对象，定义如何将通用表映射到Node和Path
+// TableMapping 表示表字段映射配置
 type TableMapping struct {
-	ID           string `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	ConnectionID string `json:"connection_id" gorm:"type:varchar(36);not null;index"`
-	Name         string `json:"name" gorm:"type:varchar(100);not null"`
-	Type         string `json:"type" gorm:"type:varchar(20);not null"` // node, path
-
-	// 表信�?
-	TableName string `json:"table_name" gorm:"type:varchar(100);not null"`
-
-	// 字段映射
-	IDField   string `json:"id_field" gorm:"type:varchar(100);not null"`    // 主键字段
-	NameField string `json:"name_field,omitempty" gorm:"type:varchar(100)"` // 名称字段
-
-	// 位置字段映射
-	XField string `json:"x_field,omitempty" gorm:"type:varchar(100)"` // X坐标字段
-	YField string `json:"y_field,omitempty" gorm:"type:varchar(100)"` // Y坐标字段
-	ZField string `json:"z_field,omitempty" gorm:"type:varchar(100)"` // Z坐标字段
-
-	// 路径特有字段
-	StartNodeField string `json:"start_node_field,omitempty" gorm:"type:varchar(100)"` // 起始节点字段
-	EndNodeField   string `json:"end_node_field,omitempty" gorm:"type:varchar(100)"`   // 结束节点字段
-
-	// 扩展字段映射
-	FieldMappings map[string]string `json:"field_mappings,omitempty" gorm:"serializer:json"`
-
-	Metadata ObjectMeta `json:"metadata" gorm:"embedded"`
+	ID           string            `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	ConnectionID string            `json:"connection_id" gorm:"type:varchar(36);not null"`
+	TableName    string            `json:"table_name" gorm:"type:varchar(100);not null"`
+	NodeMapping  *NodeTableMapping `json:"node_mapping,omitempty" gorm:"serializer:json"`
+	PathMapping  *PathTableMapping `json:"path_mapping,omitempty" gorm:"serializer:json"`
 }
 
-// === 值对象定�?===
+// NodeTableMapping 节点表映射
+type NodeTableMapping struct {
+	IDField   string `json:"id_field"`
+	NameField string `json:"name_field"`
+	TypeField string `json:"type_field"`
+	XField    string `json:"x_field"`
+	YField    string `json:"y_field"`
+	ZField    string `json:"z_field"`
+}
 
-// NodeID 节点唯一标识�?
+// PathTableMapping 路径表映射
+type PathTableMapping struct {
+	IDField        string `json:"id_field"`
+	NameField      string `json:"name_field"`
+	StartNodeField string `json:"start_node_field"`
+	EndNodeField   string `json:"end_node_field"`
+	WeightField    string `json:"weight_field"`
+}
+
+// === 值对象定义 ===
+
+// NodeID 节点唯一标识符
 type NodeID string
 
+// NewNodeID 创建新的节点ID
 func NewNodeID() NodeID {
 	return NodeID(uuid.New().String())
 }
 
+// String 返回字符串表示
 func (id NodeID) String() string {
 	return string(id)
 }
 
-// PathID 路径唯一标识�?
+// PathID 路径唯一标识符
 type PathID string
 
+// NewPathID 创建新的路径ID
 func NewPathID() PathID {
 	return PathID(uuid.New().String())
 }
 
+// String 返回字符串表示
 func (id PathID) String() string {
 	return string(id)
 }
 
-// Position 位置信息 - 值对�?
+// Position 位置信息 - 值对象
 type Position struct {
-	X float64 `json:"x" gorm:"type:decimal(12,6);not null;default:0"`
-	Y float64 `json:"y" gorm:"type:decimal(12,6);not null;default:0"`
-	Z float64 `json:"z" gorm:"type:decimal(12,6);not null;default:0"`
+	X float64 `json:"x" gorm:"type:decimal(12,6);default:0"`
+	Y float64 `json:"y" gorm:"type:decimal(12,6);default:0"`
+	Z float64 `json:"z" gorm:"type:decimal(12,6);default:0"`
 }
 
-func (p Position) Distance(other Position) float64 {
+// DistanceTo 计算到另一个位置的距离
+func (p Position) DistanceTo(other Position) float64 {
 	dx := p.X - other.X
 	dy := p.Y - other.Y
 	dz := p.Z - other.Z
 	return math.Sqrt(dx*dx + dy*dy + dz*dz)
 }
 
-// RobotCoordinates 机器人六轴坐�?- 值对�?
+// RobotCoordinates 机器人六轴坐标 - 值对象
 type RobotCoordinates struct {
-	X     float64 `json:"x" gorm:"type:decimal(12,6)"`    // X轴位�?
-	Y     float64 `json:"y" gorm:"type:decimal(12,6)"`    // Y轴位�?
-	Z     float64 `json:"z" gorm:"type:decimal(12,6)"`    // Z轴位�?
-	Roll  float64 `json:"roll" gorm:"type:decimal(8,3)"`  // 翻滚�?
-	Pitch float64 `json:"pitch" gorm:"type:decimal(8,3)"` // 俯仰�?
-	Yaw   float64 `json:"yaw" gorm:"type:decimal(8,3)"`   // 偏航�?
+	X     float64 `json:"x" gorm:"type:decimal(12,6)"`    // X轴位置
+	Y     float64 `json:"y" gorm:"type:decimal(12,6)"`    // Y轴位置
+	Z     float64 `json:"z" gorm:"type:decimal(12,6)"`    // Z轴位置
+	Roll  float64 `json:"roll" gorm:"type:decimal(8,3)"`  // 翻滚角
+	Pitch float64 `json:"pitch" gorm:"type:decimal(8,3)"` // 俯仰角
+	Yaw   float64 `json:"yaw" gorm:"type:decimal(8,3)"`   // 偏航角
 }
 
-// NodeStyle 节点样式配置 - 值对�?
+// NodeStyle 节点样式配置 - 值对象
 type NodeStyle struct {
+	Color       string  `json:"color" gorm:"type:varchar(20);default:'#007bff'"`        // 颜色
+	Size        float64 `json:"size" gorm:"type:decimal(5,2);default:10.0"`             // 大小
 	Shape       string  `json:"shape" gorm:"type:varchar(20);default:'circle'"`         // 形状
-	Radius      int     `json:"radius" gorm:"type:int;default:20"`                      // 半径
-	Color       string  `json:"color" gorm:"type:varchar(20);default:'#3498db'"`        // 颜色
-	BorderColor string  `json:"border_color" gorm:"type:varchar(20);default:'#2980b9'"` // 边框颜色
-	BorderWidth int     `json:"border_width" gorm:"type:int;default:2"`                 // 边框宽度
-	Opacity     float64 `json:"opacity" gorm:"type:decimal(3,2);default:1.0"`           // 透明�?
+	BorderColor string  `json:"border_color" gorm:"type:varchar(20);default:'#000000'"` // 边框颜色
+	BorderWidth float64 `json:"border_width" gorm:"type:decimal(3,1);default:1.0"`      // 边框宽度
+	Opacity     float64 `json:"opacity" gorm:"type:decimal(3,2);default:1.0"`           // 透明度
 }
 
-// PathStyle 路径样式配置 - 值对�?
+// PathStyle 路径样式配置 - 值对象
 type PathStyle struct {
-	LineType  string  `json:"line_type" gorm:"type:varchar(20);default:'solid'"` // 线型
-	Width     int     `json:"width" gorm:"type:int;default:2"`                   // 线宽
-	Color     string  `json:"color" gorm:"type:varchar(20);default:'#34495e'"`   // 颜色
-	ArrowSize int     `json:"arrow_size" gorm:"type:int;default:8"`              // 箭头大小
-	Opacity   float64 `json:"opacity" gorm:"type:decimal(3,2);default:1.0"`      // 透明�?
+	Color   string  `json:"color" gorm:"type:varchar(20);default:'#6c757d'"` // 颜色
+	Width   float64 `json:"width" gorm:"type:decimal(3,1);default:2.0"`      // 宽度
+	Style   string  `json:"style" gorm:"type:varchar(20);default:'solid'"`   // 样式
+	Opacity float64 `json:"opacity" gorm:"type:decimal(3,2);default:1.0"`    // 透明度
 }
 
-// ObjectMeta 对象元数�?- 参考Kubernetes ObjectMeta
+// ObjectMeta 对象元数据 - 参考Kubernetes ObjectMeta
 type ObjectMeta struct {
 	CreatedAt   time.Time         `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time         `json:"updated_at" gorm:"autoUpdateTime"`
-	Version     int               `json:"version" gorm:"type:int;default:1"`            // 乐观锁版�?
+	Version     int               `json:"version" gorm:"type:int;default:1"`            // 乐观锁版本
 	Labels      map[string]string `json:"labels,omitempty" gorm:"serializer:json"`      // 标签
 	Annotations map[string]string `json:"annotations,omitempty" gorm:"serializer:json"` // 注解
 }
 
 // === 枚举类型定义 ===
 
+// NodeType 节点类型
 type NodeType string
 
 const (
-	NodeTypePoint    NodeType = "point"    // 普通点�?
-	NodeTypeWaypoint NodeType = "waypoint" // 路径�?
-	NodeTypeStation  NodeType = "station"  // 工作�?
-	NodeTypeCharging NodeType = "charging" // 充电�?
+	NodeTypePoint    NodeType = "point"    // 普通点位
+	NodeTypeWaypoint NodeType = "waypoint" // 路径点
+	NodeTypeStation  NodeType = "station"  // 工作站
+	NodeTypeCharging NodeType = "charging" // 充电站
 )
 
+// NodeStatus 节点状态
 type NodeStatus string
 
 const (
-	NodeStatusActive   NodeStatus = "active"   // 激�?
-	NodeStatusInactive NodeStatus = "inactive" // 非激�?
-	NodeStatusDeleted  NodeStatus = "deleted"  // 已删�?
+	NodeStatusActive   NodeStatus = "active"   // 激活
+	NodeStatusInactive NodeStatus = "inactive" // 非激活
+	NodeStatusDeleted  NodeStatus = "deleted"  // 已删除
+	NodeStatusError    NodeStatus = "error"    // 错误状态
 )
 
+// PathType 路径类型
 type PathType string
 
 const (
-	PathTypeDirect PathType = "direct" // 直线路径
-	PathTypeCurved PathType = "curved" // 曲线路径
-	PathTypeSpline PathType = "spline" // 样条曲线
+	PathTypeNormal     PathType = "normal"     // 普通路径
+	PathTypeCurved     PathType = "curved"     // 曲线路径
+	PathTypeRestricted PathType = "restricted" // 受限路径
 )
 
+// PathStatus 路径状态
 type PathStatus string
 
 const (
-	PathStatusActive   PathStatus = "active"   // 激�?
-	PathStatusInactive PathStatus = "inactive" // 非激�?
+	PathStatusActive   PathStatus = "active"   // 激活
+	PathStatusInactive PathStatus = "inactive" // 非激活
 	PathStatusBlocked  PathStatus = "blocked"  // 阻塞
-	PathStatusDeleted  PathStatus = "deleted"  // 已删�?
+	PathStatusDeleted  PathStatus = "deleted"  // 已删除
 )
 
-type PathDirection string
-
-const (
-	PathDirectionUnidirectional PathDirection = "unidirectional" // 单向
-	PathDirectionBidirectional  PathDirection = "bidirectional"  // 双向
-)
-
+// CurveType 曲线类型
 type CurveType string
 
 const (
-	CurveTypeLinear CurveType = "linear" // 线�?
-	CurveTypeBezier CurveType = "bezier" // 贝塞尔曲�?
+	CurveTypeLinear CurveType = "linear" // 线性
+	CurveTypeBezier CurveType = "bezier" // 贝塞尔曲线
 	CurveTypeSpline CurveType = "spline" // 样条曲线
 )
 
-// === 业务方法 ===
+// === 工厂方法 ===
 
-// NewNode 创建新节�?
-func NewNode(name string, position Position) *Node {
+// NewNode 创建新节点
+func NewNode(name, nodeType string) *Node {
 	return &Node{
-		ID:         NewNodeID(),
-		Name:       name,
-		Type:       NodeTypePoint,
-		Status:     NodeStatusActive,
-		Position:   position,
-		Style:      NodeStyle{},
-		Properties: make(map[string]interface{}),
+		ID:     NewNodeID(),
+		Name:   name,
+		Type:   NodeType(nodeType),
+		Status: NodeStatusActive,
+		Style: NodeStyle{
+			Color:       "#007bff",
+			Size:        10.0,
+			Shape:       "circle",
+			BorderColor: "#000000",
+			BorderWidth: 1.0,
+			Opacity:     1.0,
+		},
 		Metadata: ObjectMeta{
-			Labels:      make(map[string]string),
-			Annotations: make(map[string]string),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Version:   1,
 		},
 	}
 }
 
-// NewPath 创建新路�?
+// NewPath 创建新路径
 func NewPath(name string, startNodeID, endNodeID NodeID) *Path {
 	return &Path{
 		ID:          NewPathID(),
 		Name:        name,
-		Type:        PathTypeDirect,
+		Type:        PathTypeNormal,
 		Status:      PathStatusActive,
 		StartNodeID: startNodeID,
 		EndNodeID:   endNodeID,
-		Direction:   PathDirectionBidirectional,
-		Weight:      1.0,
+		Direction:   "bidirectional",
 		CurveType:   CurveTypeLinear,
-		Style:       PathStyle{},
-		Properties:  make(map[string]interface{}),
+		Style: PathStyle{
+			Color:   "#6c757d",
+			Width:   2.0,
+			Style:   "solid",
+			Opacity: 1.0,
+		},
 		Metadata: ObjectMeta{
-			Labels:      make(map[string]string),
-			Annotations: make(map[string]string),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Version:   1,
 		},
 	}
 }
 
-// IsValid 验证节点是否有效
+// === 业务方法 ===
+
+// IsValid 验证节点有效性
 func (n *Node) IsValid() error {
-	if n.ID == "" {
-		return fmt.Errorf("节点ID不能为空")
-	}
 	if n.Name == "" {
 		return fmt.Errorf("节点名称不能为空")
 	}
 	return nil
 }
 
-// IsValid 验证路径是否有效
+// UpdatedAt 更新时间戳
+func (n *Node) UpdatedAt() {
+	n.Metadata.UpdatedAt = time.Now()
+	n.Metadata.Version++
+}
+
+// IsValid 验证路径有效性
 func (p *Path) IsValid() error {
-	if p.ID == "" {
-		return fmt.Errorf("路径ID不能为空")
+	if p.Name == "" {
+		return fmt.Errorf("路径名称不能为空")
 	}
 	if p.StartNodeID == "" || p.EndNodeID == "" {
 		return fmt.Errorf("路径的起始节点和结束节点不能为空")
@@ -316,4 +339,10 @@ func (p *Path) IsValid() error {
 		return fmt.Errorf("路径权重不能为负数")
 	}
 	return nil
+}
+
+// UpdatedAt 更新时间戳
+func (p *Path) UpdatedAt() {
+	p.Metadata.UpdatedAt = time.Now()
+	p.Metadata.Version++
 }

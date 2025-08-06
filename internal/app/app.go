@@ -15,9 +15,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
 	"robot-path-editor/internal/config"
@@ -25,27 +25,37 @@ import (
 	"robot-path-editor/internal/handlers"
 	"robot-path-editor/internal/repositories"
 	"robot-path-editor/internal/services"
+	"robot-path-editor/pkg/logger"
 	"robot-path-editor/pkg/middleware"
 	"robot-path-editor/web"
 )
 
-// Application 应用程序主结�?
+// Application 应用程序主结构
 // 采用依赖注入模式，管理所有组件的生命周期
 type Application struct {
 	config *config.Config
+	log    *logrus.Entry
+
+	// 服务器 - 核心业务逻辑
 	server *http.Server
-	db     database.Database
+	router *gin.Engine
 
-	// 服务�?- 核心业务逻辑
-	nodeService   services.NodeService
-	pathService   services.PathService
-	layoutService services.LayoutService
-	dbService     services.DatabaseService
+	// 数据层
+	db               database.Database
+	nodeRepo         repositories.NodeRepository
+	pathRepo         repositories.PathRepository
+	dbConnRepo       repositories.DatabaseConnectionRepository
+	tableMappingRepo repositories.TableMappingRepository
 
-	// 处理器层 - HTTP API处理
+	// 业务服务层
+	nodeService     services.NodeService
+	pathService     services.PathService
+	layoutService   services.LayoutService
+	pluginService   services.PluginService
+	databaseService services.DatabaseService
+
+	// HTTP处理器
 	handlers *handlers.Handlers
-
-	log *logrus.Entry
 }
 
 // New 创建新的应用程序实例
@@ -53,7 +63,15 @@ type Application struct {
 func New(cfg *config.Config) (*Application, error) {
 	log := logrus.WithField("component", "app")
 
-	// 1. 初始化数据库和仓储层
+	app := &Application{
+		config: cfg,
+		log:    log,
+	}
+
+	// 1. 初始化日志系统
+	logger.Init(cfg.Logger)
+
+	// 2. 初始化数据库和仓储层
 	var nodeRepo repositories.NodeRepository
 	var pathRepo repositories.PathRepository
 	var dbConnRepo repositories.DatabaseConnectionRepository
@@ -74,60 +92,68 @@ func New(cfg *config.Config) (*Application, error) {
 		tableMappingRepo = nil
 		db = nil
 	} else {
-		// 使用数据库仓�?
+		// 使用数据库仓储
+		nodeRepo = repositories.NewNodeRepository(database)
+		pathRepo = repositories.NewPathRepository(database)
+		dbConnRepo = repositories.NewDatabaseConnectionRepository(database)
+		tableMappingRepo = repositories.NewTableMappingRepository(database)
 		db = database
-		nodeRepo = repositories.NewNodeRepository(db)
-		pathRepo = repositories.NewPathRepository(db)
-		dbConnRepo = repositories.NewDatabaseConnectionRepository(db)
-		tableMappingRepo = repositories.NewTableMappingRepository(db)
 	}
 
-	// 2. 初始化服务层 - 业务逻辑
-	nodeService := services.NewNodeService(nodeRepo)
-
-	// 如果使用内存模式，创建简化的服务
+	// 3. 初始化业务服务层
+	var nodeService services.NodeService
 	var pathService services.PathService
 	var layoutService services.LayoutService
-	var dbService services.DatabaseService
+	var pluginService services.PluginService
+	var databaseService services.DatabaseService
 
-	if pathRepo != nil {
-		pathService = services.NewPathService(pathRepo, nodeRepo)
-		layoutService = services.NewLayoutService(nodeService, pathService)
-		dbService = services.NewDatabaseService(dbConnRepo, tableMappingRepo)
-	} else {
-		// 内存模式下的简化服�?
+	if pathRepo == nil {
+		// 如果使用内存模式，创建简化的服务
+		nodeService = services.NewNodeService(nodeRepo, nil)
 		pathService = &services.MockPathService{}
-		layoutService = &services.MockLayoutService{}
-		dbService = &services.MockDatabaseService{}
+		layoutService = services.NewLayoutService()
+		pluginService = services.NewPluginService()
+		databaseService = &services.MockDatabaseService{}
+	} else {
+		// 内存模式下的简化服务
+		nodeService = services.NewNodeService(nodeRepo, pathRepo)
+		pathService = services.NewPathService(pathRepo, nodeRepo)
+		layoutService = services.NewLayoutService()
+		pluginService = services.NewPluginService()
+		databaseService = services.NewDatabaseService(dbConnRepo, tableMappingRepo)
 	}
 
-	// 4. 初始化处理器�?- API接口
+	// 4. 初始化处理器层 - API接口
 	handlers := handlers.New(
 		nodeService,
 		pathService,
 		layoutService,
-		dbService,
+		databaseService,
 	)
 
-	// 5. 创建HTTP服务�?
+	// 5. 创建HTTP服务器
+	router := gin.New()
 	server := &http.Server{
-		Addr:         cfg.Server.Addr,
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
-		IdleTimeout:  cfg.Server.IdleTimeout,
+		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		Handler:      router,
+		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	}
 
-	app := &Application{
-		config:        cfg,
-		server:        server,
-		db:            db,
-		nodeService:   nodeService,
-		pathService:   pathService,
-		layoutService: layoutService,
-		dbService:     dbService,
-		handlers:      handlers,
-		log:           log,
-	}
+	// 设置应用程序字段
+	app.db = db
+	app.nodeRepo = nodeRepo
+	app.pathRepo = pathRepo
+	app.dbConnRepo = dbConnRepo
+	app.tableMappingRepo = tableMappingRepo
+	app.nodeService = nodeService
+	app.pathService = pathService
+	app.layoutService = layoutService
+	app.pluginService = pluginService
+	app.databaseService = databaseService
+	app.handlers = handlers
+	app.router = router
+	app.server = server
 
 	// 6. 配置路由
 	if err := app.setupRoutes(); err != nil {
@@ -186,26 +212,25 @@ func (a *Application) setupRoutes() error {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	router := gin.New()
+	// 基础中间件 - 参考Kubernetes API Server的中间件设计
+	a.router.Use(middleware.Logger())
+	a.router.Use(middleware.Recovery())
+	a.router.Use(middleware.CORS())
 
-	// 基础中间�?- 参考Kubernetes API Server的中间件�?
-	router.Use(middleware.Logger())
-	router.Use(middleware.Recovery())
-	router.Use(middleware.CORS())
+	// 健康检查端点 - 参考Kubernetes的健康检查
+	a.router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok", "timestamp": time.Now()})
+	})
 
-	// 健康检查端�?- 参考Kubernetes的健康检�?
-	router.GET("/health", a.handlers.HealthCheck)
-	router.GET("/ready", a.handlers.ReadinessCheck)
+	// 指标端点 - 参考Prometheus的指标暴露
+	a.router.GET("/metrics", func(c *gin.Context) {
+		c.JSON(200, gin.H{"metrics": "placeholder"})
+	})
 
-	// 指标端点 - 参考Prometheus的指标暴�?
-	if a.config.Metrics.Enabled {
-		router.GET(a.config.Metrics.Path, gin.WrapH(promhttp.Handler()))
-	}
-
-	// API路由�?- RESTful API设计
-	api := router.Group("/api/v1")
+	// API路由组 - RESTful API设计
+	api := a.router.Group("/api/v1")
 	{
-		// 节点管理API
+		// 节点管理
 		nodes := api.Group("/nodes")
 		{
 			nodes.GET("", a.handlers.ListNodes)
@@ -213,10 +238,14 @@ func (a *Application) setupRoutes() error {
 			nodes.GET("/:id", a.handlers.GetNode)
 			nodes.PUT("/:id", a.handlers.UpdateNode)
 			nodes.DELETE("/:id", a.handlers.DeleteNode)
-			nodes.PUT("/:id/position", a.handlers.UpdateNodePosition)
+			nodes.POST("/batch", a.handlers.BatchCreateNodes)
+			nodes.PUT("/batch", a.handlers.BatchUpdateNodes)
+			nodes.DELETE("/batch", a.handlers.BatchDeleteNodes)
+			nodes.GET("/search", a.handlers.SearchNodes)
+			nodes.GET("/:id/connected", a.handlers.GetConnectedNodes)
 		}
 
-		// 路径管理API
+		// 路径管理
 		paths := api.Group("/paths")
 		{
 			paths.GET("", a.handlers.ListPaths)
@@ -224,35 +253,48 @@ func (a *Application) setupRoutes() error {
 			paths.GET("/:id", a.handlers.GetPath)
 			paths.PUT("/:id", a.handlers.UpdatePath)
 			paths.DELETE("/:id", a.handlers.DeletePath)
-			paths.POST("/generate", a.handlers.GeneratePaths)
+			paths.GET("/node/:nodeId", a.handlers.GetPathsByNode)
 		}
 
-		// 布局管理API
-		layouts := api.Group("/layouts")
+		// 布局算法
+		layout := api.Group("/layout")
 		{
-			layouts.POST("/arrange", a.handlers.ArrangeNodes)
-			layouts.GET("/algorithms", a.handlers.ListLayoutAlgorithms)
+			layout.POST("/force-directed", a.handlers.ApplyForceDirectedLayout)
+			layout.POST("/hierarchical", a.handlers.ApplyHierarchicalLayout)
+			layout.POST("/circular", a.handlers.ApplyCircularLayout)
+			layout.POST("/grid", a.handlers.ApplyGridLayout)
 		}
 
-		// 数据库管理API
-		databases := api.Group("/databases")
+		// 路径生成算法
+		generation := api.Group("/generation")
 		{
-			databases.GET("/connections", a.handlers.ListDatabaseConnections)
-			databases.POST("/connections", a.handlers.CreateDatabaseConnection)
-			databases.PUT("/connections/:id", a.handlers.UpdateDatabaseConnection)
-			databases.DELETE("/connections/:id", a.handlers.DeleteDatabaseConnection)
-			databases.POST("/connections/:id/test", a.handlers.TestDatabaseConnection)
-
-			databases.GET("/connections/:id/tables", a.handlers.ListTables)
-			databases.GET("/connections/:id/tables/:table/columns", a.handlers.ListColumns)
-
-			databases.GET("/mappings", a.handlers.ListTableMappings)
-			databases.POST("/mappings", a.handlers.CreateTableMapping)
-			databases.PUT("/mappings/:id", a.handlers.UpdateTableMapping)
-			databases.DELETE("/mappings/:id", a.handlers.DeleteTableMapping)
+			generation.POST("/shortest-paths", a.handlers.GenerateShortestPaths)
+			generation.POST("/full-connectivity", a.handlers.GenerateFullConnectivity)
+			generation.POST("/tree-structure", a.handlers.GenerateTreeStructure)
+			generation.POST("/nearest-neighbor", a.handlers.GenerateNearestNeighborPaths)
+			generation.POST("/grid-paths", a.handlers.GenerateGridPaths)
 		}
 
-		// 图分析API
+		// 数据库连接管理
+		db := api.Group("/database")
+		{
+			db.GET("/connections", a.handlers.ListDatabaseConnections)
+			db.POST("/connections", a.handlers.CreateDatabaseConnection)
+			db.PUT("/connections/:id", a.handlers.UpdateDatabaseConnection)
+			db.DELETE("/connections/:id", a.handlers.DeleteDatabaseConnection)
+			db.POST("/connections/:id/test", a.handlers.TestDatabaseConnection)
+		}
+
+		// 表映射管理
+		mapping := api.Group("/mapping")
+		{
+			mapping.GET("/tables", a.handlers.ListTableMappings)
+			mapping.POST("/tables", a.handlers.CreateTableMapping)
+			mapping.PUT("/tables/:id", a.handlers.UpdateTableMapping)
+			mapping.DELETE("/tables/:id", a.handlers.DeleteTableMapping)
+		}
+
+		// 分析相关处理器
 		analysis := api.Group("/analysis")
 		{
 			analysis.POST("/shortest-path", a.handlers.FindShortestPath)
@@ -261,18 +303,14 @@ func (a *Application) setupRoutes() error {
 		}
 	}
 
-	// WebSocket API - 实时通信
-	ws := router.Group("/ws")
-	{
-		ws.GET("/canvas", a.handlers.CanvasWebSocket)
-	}
+	// WebSocket端点
+	a.router.GET("/ws/canvas", a.handlers.CanvasWebSocket)
 
-	// 静态文件服�?- 前端资源
-	router.StaticFS("/static", http.FS(web.StaticFiles))
-	router.GET("/", func(c *gin.Context) {
+	// 静态文件服务 - 前端资源
+	a.router.StaticFS("/static", http.FS(web.StaticFiles))
+	a.router.GET("/", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", web.IndexHTML)
 	})
 
-	a.server.Handler = router
 	return nil
 }
