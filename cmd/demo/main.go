@@ -198,7 +198,7 @@ func (h *DemoHandlers) DeleteNode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "节点删除成功"})
 }
 
-// UpdateNodePosition 更新节点位置（仅坐标�?
+// UpdateNodePosition 更新节点位置（仅坐标）
 func (h *DemoHandlers) UpdateNodePosition(c *gin.Context) {
 	id := c.Param("id")
 	var req struct {
@@ -446,7 +446,7 @@ func (h *DemoHandlers) GenerateNearestNeighborPaths(c *gin.Context) {
 	})
 }
 
-// GenerateFullConnectivity 生成完全连通路�?
+// GenerateFullConnectivity 生成完全连通路径
 func (h *DemoHandlers) GenerateFullConnectivity(c *gin.Context) {
 	h.store.mu.Lock()
 	defer h.store.mu.Unlock()
@@ -771,7 +771,7 @@ func generateGridPaths(nodes []domain.Node, connectDiagonal bool) []domain.Path 
 
 	// 按位置排序节点，创建网格结构
 	sort.Slice(nodes, func(i, j int) bool {
-		if math.Abs(nodes[i].Position.Y-nodes[j].Position.Y) < 10 { // 同一�?
+		if math.Abs(nodes[i].Position.Y-nodes[j].Position.Y) < 10 { // 同一行
 			return nodes[i].Position.X < nodes[j].Position.X
 		}
 		return nodes[i].Position.Y < nodes[j].Position.Y
@@ -910,7 +910,7 @@ func maxString(a, b string) string {
 	return b
 }
 
-// 健康检�?
+// 健康检查
 func (h *DemoHandlers) HealthCheck(c *gin.Context) {
 	h.store.mu.RLock()
 	nodeCount := len(h.store.nodes)
@@ -1368,7 +1368,7 @@ func main() {
 
 	fmt.Println("🤖 机器人路径编辑器演示版启动中...")
 
-	// 初始化内存存�?
+	// 初始化内存存储
 	store := NewMemoryStore()
 	handlers := NewDemoHandlers(store)
 
@@ -1415,7 +1415,7 @@ func main() {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(tableHTML))
 	})
 
-	// 健康检�?
+	// 健康检查
 	r.GET("/health", handlers.HealthCheck)
 
 	// 画布数据

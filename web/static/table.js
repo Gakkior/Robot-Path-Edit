@@ -5,7 +5,7 @@ const API_BASE = '/';
 
 class TableView {
   constructor() {
-    this.currentView = 'nodes'; // 'nodes' �?'paths'
+    this.currentView = 'nodes'; // 'nodes' 或 'paths'
     this.data = { nodes: {}, paths: {} };
     this.init();
   }
@@ -62,7 +62,7 @@ class TableView {
   switchView(viewType) {
     this.currentView = viewType;
     
-    // 更新按钮状�?
+    // 更新按钮状态
     document.getElementById('nodeViewBtn').classList.toggle('active', viewType === 'nodes');
     document.getElementById('pathViewBtn').classList.toggle('active', viewType === 'paths');
     
@@ -92,7 +92,7 @@ class TableView {
   renderNodeTable(nodes) {
     let html = `
       <div class="table-header">
-        <h3>节点管理 (${nodes.length} 个节�?</h3>
+        <h3>节点管理 (${nodes.length} 个节点)</h3>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
@@ -101,7 +101,7 @@ class TableView {
               <th>ID</th>
               <th>名称</th>
               <th>类型</th>
-              <th>状�?/th>
+              <th>状态</th>
               <th>X坐标</th>
               <th>Y坐标</th>
               <th>Z坐标</th>
@@ -143,7 +143,7 @@ class TableView {
   renderPathTable(paths) {
     let html = `
       <div class="table-header">
-        <h3>路径管理 (${paths.length} 个路�?</h3>
+        <h3>路径管理 (${paths.length} 个路径)</h3>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
@@ -152,7 +152,7 @@ class TableView {
               <th>ID</th>
               <th>名称</th>
               <th>类型</th>
-              <th>状�?/th>
+              <th>状态</th>
               <th>起始节点</th>
               <th>结束节点</th>
               <th>创建时间</th>
@@ -232,7 +232,7 @@ class TableView {
         value = parseFloat(value) || 0;
       }
       
-      // 处理嵌套字段 (�?position.x)
+      // 处理嵌套字段 (如 position.x)
       if (field.includes('.')) {
         const parts = field.split('.');
         if (!data[parts[0]]) data[parts[0]] = {};
@@ -290,13 +290,13 @@ class TableView {
   async addNewItem() {
     const data = this.currentView === 'nodes' ? 
       {
-        name: '新节�?,
+        name: '新节点',
         type: 'default',
         status: 'active',
         position: { x: 100, y: 100, z: 0 }
       } : 
       {
-        name: '新路�?,
+        name: '新路径',
         type: 'default',
         status: 'active',
         start_node_id: Object.keys(this.data.nodes)[0] || '',

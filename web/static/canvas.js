@@ -1,4 +1,4 @@
-// Konva 画布初始化脚�?
+// Konva 画布初始化脚本
 console.log('加载 Konva 画布脚本');
 
 const API_BASE = '/';
@@ -16,13 +16,13 @@ class CommandManager {
   }
 
   async executeCommand(command) {
-    // 清除当前位置之后的历�?
+    // 清除当前位置之后的历史
     this.history = this.history.slice(0, this.currentIndex + 1);
     
     // 执行命令
     await command.execute();
     
-    // 添加到历�?
+    // 添加到历史
     this.history.push(command);
     this.currentIndex++;
     
@@ -62,7 +62,7 @@ class CommandManager {
   }
 
   updateUI() {
-    // 更新撤销/重做按钮状�?
+    // 更新撤销/重做按钮状态
     const undoBtn = document.getElementById('undoBtn');
     const redoBtn = document.getElementById('redoBtn');
     if (undoBtn) undoBtn.disabled = !this.canUndo();
@@ -186,7 +186,7 @@ nodeForm.addEventListener('submit', async (e) => {
 });
 
 async function createPath(startId, endId) {
-  const pathData = { name: '新路�?, start_node_id: startId, end_node_id: endId };
+  const pathData = { name: '新路径', start_node_id: startId, end_node_id: endId };
   const command = new CreatePathCommand(pathData);
   await commandManager.executeCommand(command);
 }
@@ -267,7 +267,7 @@ let selectedNodeId = null;
 
   // 绘制路径
   function redrawPaths() {
-    // 清理旧路�?
+    // 清理旧路径
     layer.find('Line').forEach((l) => l.destroy());
 
     data.paths && Object.values(data.paths).forEach((p) => {
@@ -372,7 +372,7 @@ async function generatePaths(algorithm, params) {
     // 显示成功消息
     const algorithmNames = {
       'nearest-neighbor': '最近邻',
-      'full-connectivity': '完全连�?,
+      'full-connectivity': '完全连通',
       'grid': '网格'
     };
     showMessage(`${algorithmNames[algorithm]}路径生成成功，创建了${result.created_paths}条路径`, 'success');
@@ -446,7 +446,7 @@ function showMessage(message, type) {
       circularLayoutBtn.addEventListener('click', () => applyLayout('circular'));
     }
 
-    // 初始化路径生成按钮事�?
+    // 初始化路径生成按钮事件
     const nearestPathBtn = document.getElementById('nearestPathBtn');
     const fullConnectBtn = document.getElementById('fullConnectBtn');
     const gridPathBtn = document.getElementById('gridPathBtn');
@@ -463,7 +463,7 @@ function showMessage(message, type) {
       gridPathBtn.addEventListener('click', () => generatePaths('grid', { connect_diagonal: false }));
     }
     
-    // 初始化按钮状�?
+    // 初始化按钮状态
     commandManager.updateUI();
     
   } catch (err) {
@@ -471,11 +471,11 @@ function showMessage(message, type) {
   }
 })();
 
-// 快捷键处�?
+// 快捷键处理
 window.addEventListener('keydown', async (e) => {
   // 删除选中路径
   if (e.key === 'Delete' && selectedPathId) {
-    if (confirm('确定删除所选路�?')) {
+    if (confirm('确定删除所选路径?')) {
       // 获取路径数据用于撤销
       const pathData = currentCanvasData.paths[selectedPathId];
       if (pathData) {
@@ -492,7 +492,7 @@ window.addEventListener('keydown', async (e) => {
     await commandManager.undo();
   }
   
-  // 重做 (Ctrl+Shift+Z �?Ctrl+Y)
+  // 重做 (Ctrl+Shift+Z 或 Ctrl+Y)
   if ((e.ctrlKey && e.shiftKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) {
     e.preventDefault();
     await commandManager.redo();

@@ -1,7 +1,7 @@
 # 机器人路径编辑器配置文件
-# 参考Kubernetes和Grafana的配置格�?
+# 参考Kubernetes和Grafana的配置格式
 
-# 服务器配�?
+# 服务器配置
 server:
   addr: ":8080"              # 服务监听地址
   read_timeout: "30s"        # 读取超时
@@ -12,14 +12,14 @@ server:
     cert_file: ""           # 证书文件路径
     key_file: ""            # 私钥文件路径
 
-# 数据库配�?
+# 数据库配置
 database:
   type: "sqlite"                    # 数据库类型：sqlite, mysql, postgres
-  dsn: "./data/robot-path-editor.db" # 数据源名�?
-  max_open_conns: 25               # 最大打开连接�?
+  dsn: "./data/robot-path-editor.db" # 数据源名称
+  max_open_conns: 25               # 最大打开连接数
   max_idle_conns: 5                # 最大空闲连接数
-  conn_max_lifetime: "1h"          # 连接最大生命周�?
-  auto_migrate: true               # 是否自动迁移数据库结�?
+  conn_max_lifetime: "1h"          # 连接最大生命周期
+  auto_migrate: true               # 是否自动迁移数据库结构
 
 # 日志配置
 logger:
@@ -27,7 +27,7 @@ logger:
   format: "json"             # 日志格式：json, text
   output: "stdout"           # 输出目标：stdout, file
   file: "./logs/app.log"     # 日志文件路径（当output为file时）
-  max_size: 100              # 单个文件最大大�?MB)
+  max_size: 100              # 单个文件最大大小(MB)
   max_backups: 3             # 保留的备份文件数
   max_age: 7                 # 保留天数
   compress: true             # 是否压缩备份文件

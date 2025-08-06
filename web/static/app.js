@@ -4,7 +4,7 @@ console.log('机器人路径编辑器前端应用加载完成');
 // API基础配置
 const API_BASE = '/api/v1';
 
-// 简单的API客户�?
+// 简单的API客户端
 class ApiClient {
     async get(endpoint) {
         const response = await fetch(`${API_BASE}${endpoint}`);

@@ -228,7 +228,7 @@ pluginService.RegisterLayoutPlugin(&CustomLayoutPlugin{})
 
 ### 开发环境搭建
 ```bash
-# 安装开发工�?
+# 安装开发工具
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 go install github.com/swaggo/swag/cmd/swag@latest
 
