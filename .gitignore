@@ -1,0 +1,54 @@
+# 编译产生的可执行文件
+*.exe
+*.bin
+demo
+test_server
+robot-path-editor
+
+# Go编译缓存
+*.o
+*.a
+*.so
+
+# 临时文件
+tash
+tatus
+*.tmp
+*.temp
+*.log
+
+# IDE配置文件（可选，根据团队需要调整）
+# .idea/
+# .vscode/
+
+# 操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 运行时生成的文件
+data/
+logs/
+*.db
+*.sqlite
+
+# 依赖管理
+vendor/
+
+# 测试覆盖率文件
+*.coverprofile
+coverage.out
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 构建输出目录
+build/
+dist/
+out/
