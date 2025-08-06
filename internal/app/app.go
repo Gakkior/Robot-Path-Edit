@@ -308,8 +308,15 @@ func (a *Application) setupRoutes() error {
 
 	// 静态文件服务 - 前端资源
 	a.router.StaticFS("/static", http.FS(web.StaticFiles))
+
+	// 首页 - 介绍页面
 	a.router.GET("/", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", web.IndexHTML)
+	})
+
+	// 应用界面 - 主要的编辑器界面
+	a.router.GET("/app", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", web.AppHTML)
 	})
 
 	return nil

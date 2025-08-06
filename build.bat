@@ -1,7 +1,8 @@
 @echo off
+chcp 65001 >nul 2>&1
 setlocal enabledelayedexpansion
 
-REM Robot Path Editor Windows Build Script
+REM 机器人路径编辑器 Windows构建脚本
 
 set PROJECT_NAME=robot-path-editor
 set VERSION=%VERSION%
@@ -11,7 +12,7 @@ set BUILD_TIME=%date% %time%
 set BUILD_DIR=build
 set DIST_DIR=dist
 
-REM Color definitions
+REM 颜色定义
 for /F %%a in ('echo prompt $E ^| cmd') do set "ESC=%%a"
 set "RED=%ESC%[31m"
 set "GREEN=%ESC%[32m"
@@ -19,22 +20,22 @@ set "YELLOW=%ESC%[33m"
 set "BLUE=%ESC%[34m"
 set "NC=%ESC%[0m"
 
-echo %BLUE%[INFO]%NC% Robot Path Editor Build Script
-echo %BLUE%[INFO]%NC% Project Version: %VERSION%
-echo %BLUE%[INFO]%NC% Build Time: %BUILD_TIME%
+echo %BLUE%[信息]%NC% 机器人路径编辑器构建脚本
+echo %BLUE%[信息]%NC% 项目版本: %VERSION%
+echo %BLUE%[信息]%NC% 构建时间: %BUILD_TIME%
 
-REM Check Go environment
+REM 检查Go环境
 go version >nul 2>&1
 if errorlevel 1 (
-    echo %RED%[ERROR]%NC% Go environment not installed or not in PATH
+    echo %RED%[错误]%NC% Go环境未安装或不在PATH中
     exit /b 1
 )
 
-REM Create build directories
+REM 创建构建目录
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
 
-REM Parse command line arguments
+REM 解析命令行参数
 set COMMAND=%1
 if "%COMMAND%"=="" set COMMAND=build
 
@@ -45,100 +46,100 @@ if /i "%COMMAND%"=="build-all" goto :build_all
 if /i "%COMMAND%"=="release" goto :release
 if /i "%COMMAND%"=="help" goto :help
 
-echo %RED%[ERROR]%NC% Unknown command: %COMMAND%
+echo %RED%[错误]%NC% 未知命令: %COMMAND%
 goto :help
 
 :clean
-echo %BLUE%[INFO]%NC% Cleaning build directories...
+echo %BLUE%[信息]%NC% 清理构建目录...
 if exist "%BUILD_DIR%" rmdir /s /q "%BUILD_DIR%"
 if exist "%DIST_DIR%" rmdir /s /q "%DIST_DIR%"
-echo %GREEN%[SUCCESS]%NC% Clean completed
+echo %GREEN%[成功]%NC% 清理完成
 goto :end
 
 :test
-echo %BLUE%[INFO]%NC% Running tests...
+echo %BLUE%[信息]%NC% 运行测试...
 if exist "tests" (
     go test ./tests/... -v
     if errorlevel 1 (
-        echo %RED%[ERROR]%NC% Tests failed
+        echo %RED%[错误]%NC% 测试失败
         exit /b 1
     )
 ) else (
-    echo %YELLOW%[WARNING]%NC% No tests directory found, skipping tests
+    echo %YELLOW%[警告]%NC% 未找到测试目录，跳过测试
 )
-echo %GREEN%[SUCCESS]%NC% Tests passed
+echo %GREEN%[成功]%NC% 测试通过
 goto :end
 
 :build
-echo %BLUE%[INFO]%NC% Building for current platform...
+echo %BLUE%[信息]%NC% 为当前平台构建...
 set CGO_ENABLED=0
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%.exe" cmd/server/main.go
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-demo.exe" cmd/demo/main.go
 
 if exist "%BUILD_DIR%\%PROJECT_NAME%.exe" (
-    echo %GREEN%[SUCCESS]%NC% Build completed: %BUILD_DIR%\%PROJECT_NAME%.exe
+    echo %GREEN%[成功]%NC% 构建完成: %BUILD_DIR%\%PROJECT_NAME%.exe
 ) else (
-    echo %RED%[ERROR]%NC% Build failed
+    echo %RED%[错误]%NC% 构建失败
     exit /b 1
 )
 goto :end
 
 :build_all
-echo %BLUE%[INFO]%NC% Starting cross-platform build...
+echo %BLUE%[信息]%NC% 开始跨平台构建...
 
 REM Windows
-echo %BLUE%[INFO]%NC% Building Windows/amd64...
+echo %BLUE%[信息]%NC% 构建 Windows/amd64...
 set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=0
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-windows-amd64.exe" cmd/server/main.go
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-demo-windows-amd64.exe" cmd/demo/main.go
 
-echo %BLUE%[INFO]%NC% Building Windows/386...
+echo %BLUE%[信息]%NC% 构建 Windows/386...
 set GOARCH=386
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-windows-386.exe" cmd/server/main.go
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-demo-windows-386.exe" cmd/demo/main.go
 
 REM Linux
-echo %BLUE%[INFO]%NC% Building Linux/amd64...
+echo %BLUE%[信息]%NC% 构建 Linux/amd64...
 set GOOS=linux
 set GOARCH=amd64
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-linux-amd64" cmd/server/main.go
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-demo-linux-amd64" cmd/demo/main.go
 
-echo %BLUE%[INFO]%NC% Building Linux/arm64...
+echo %BLUE%[信息]%NC% 构建 Linux/arm64...
 set GOARCH=arm64
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-linux-arm64" cmd/server/main.go
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-demo-linux-arm64" cmd/demo/main.go
 
 REM macOS
-echo %BLUE%[INFO]%NC% Building macOS/amd64...
+echo %BLUE%[信息]%NC% 构建 macOS/amd64...
 set GOOS=darwin
 set GOARCH=amd64
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-darwin-amd64" cmd/server/main.go
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-demo-darwin-amd64" cmd/demo/main.go
 
-echo %BLUE%[INFO]%NC% Building macOS/arm64...
+echo %BLUE%[信息]%NC% 构建 macOS/arm64...
 set GOARCH=arm64
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-darwin-arm64" cmd/server/main.go
 go build -ldflags "-s -w" -o "%BUILD_DIR%\%PROJECT_NAME%-demo-darwin-arm64" cmd/demo/main.go
 
-echo %GREEN%[SUCCESS]%NC% Cross-platform build completed
+echo %GREEN%[成功]%NC% 跨平台构建完成
 goto :end
 
 :release
-echo %BLUE%[INFO]%NC% Creating release packages...
+echo %BLUE%[信息]%NC% 创建发布包...
 call :test
 if errorlevel 1 exit /b 1
 
 call :build_all
 if errorlevel 1 exit /b 1
 
-REM Copy resource files
+REM 复制资源文件
 if exist "web" xcopy /e /i "web" "%BUILD_DIR%\web"
 if exist "configs\config.yaml" copy "configs\config.yaml" "%BUILD_DIR%\"
 
-REM Create release packages
+REM 创建发布包
 for %%f in ("%BUILD_DIR%\%PROJECT_NAME%-*.exe") do (
     set "filename=%%~nf"
     set "platform=!filename:%PROJECT_NAME%-=!"
@@ -149,14 +150,14 @@ for %%f in ("%BUILD_DIR%\%PROJECT_NAME%-*.exe") do (
     if exist "%BUILD_DIR%\web" xcopy /e /i "%BUILD_DIR%\web" "%BUILD_DIR%\temp-!platform!\web"
     if exist "%BUILD_DIR%\config.yaml" copy "%BUILD_DIR%\config.yaml" "%BUILD_DIR%\temp-!platform!\"
     
-    echo %PROJECT_NAME% %VERSION% > "%BUILD_DIR%\temp-!platform!\README.txt"
+    echo 机器人路径编辑器 %VERSION% > "%BUILD_DIR%\temp-!platform!\README.txt"
     echo. >> "%BUILD_DIR%\temp-!platform!\README.txt"
-    echo Build Time: %BUILD_TIME% >> "%BUILD_DIR%\temp-!platform!\README.txt"
+    echo 构建时间: %BUILD_TIME% >> "%BUILD_DIR%\temp-!platform!\README.txt"
     echo. >> "%BUILD_DIR%\temp-!platform!\README.txt"
-    echo Usage: >> "%BUILD_DIR%\temp-!platform!\README.txt"
-    echo 1. Run %PROJECT_NAME%.exe to start server >> "%BUILD_DIR%\temp-!platform!\README.txt"
-    echo 2. Run %PROJECT_NAME%-demo.exe to start demo >> "%BUILD_DIR%\temp-!platform!\README.txt"
-    echo 3. Visit http://localhost:8080 >> "%BUILD_DIR%\temp-!platform!\README.txt"
+    echo 使用方法: >> "%BUILD_DIR%\temp-!platform!\README.txt"
+    echo 1. 运行 %PROJECT_NAME%.exe 启动服务器 >> "%BUILD_DIR%\temp-!platform!\README.txt"
+    echo 2. 运行 %PROJECT_NAME%-demo.exe 启动演示版 >> "%BUILD_DIR%\temp-!platform!\README.txt"
+    echo 3. 访问 http://localhost:8080 >> "%BUILD_DIR%\temp-!platform!\README.txt"
     
     if exist "C:\Program Files\7-Zip\7z.exe" (
         "C:\Program Files\7-Zip\7z.exe" a "%DIST_DIR%\%PROJECT_NAME%-%VERSION%-!platform!.zip" "%BUILD_DIR%\temp-!platform!\*"
@@ -165,33 +166,33 @@ for %%f in ("%BUILD_DIR%\%PROJECT_NAME%-*.exe") do (
     )
     
     rmdir /s /q "%BUILD_DIR%\temp-!platform!"
-    echo %GREEN%[SUCCESS]%NC% Release package created: %DIST_DIR%\%PROJECT_NAME%-%VERSION%-!platform!.zip
+    echo %GREEN%[成功]%NC% 发布包创建完成: %DIST_DIR%\%PROJECT_NAME%-%VERSION%-!platform!.zip
 )
 
-echo %GREEN%[SUCCESS]%NC% Release packages created
+echo %GREEN%[成功]%NC% 所有发布包创建完成
 goto :end
 
 :help
 echo.
-echo Robot Path Editor Windows Build Script
+echo 机器人路径编辑器 Windows构建脚本
 echo.
-echo Usage: %0 [command]
+echo 用法: %0 [命令]
 echo.
-echo Commands:
-echo   build        Build binary for current platform
-echo   build-all    Build binaries for all platforms
-echo   test         Run tests
-echo   release      Create release packages
-echo   clean        Clean build files
-echo   help         Show this help information
+echo 命令:
+echo   build        为当前平台构建二进制文件
+echo   build-all    为所有平台构建二进制文件
+echo   test         运行测试
+echo   release      创建发布包
+echo   clean        清理构建文件
+echo   help         显示此帮助信息
 echo.
-echo Examples:
-echo   %0 build-all    # Build for all platforms
-echo   %0 test         # Run tests
-echo   %0 release      # Create release packages
+echo 示例:
+echo   %0 build-all    # 为所有平台构建
+echo   %0 test         # 运行测试
+echo   %0 release      # 创建发布包
 echo.
-echo Environment Variables:
-echo   VERSION         Set version number (default: v1.0.0)
+echo 环境变量:
+echo   VERSION         设置版本号 (默认: v1.0.0)
 echo.
 goto :end
 
