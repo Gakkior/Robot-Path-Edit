@@ -1,15 +1,15 @@
-// Package services 实现业务逻辑�?
+// Package services 实现业务逻辑层
 //
 // 设计参考：
-// - DDD的应用服务模�?
+// - DDD的应用服务模式
 // - Kubernetes的控制器模式
 // - 微服务的业务逻辑封装
 //
-// 特点�?
+// 特点：
 // 1. 业务规则封装：包含所有业务逻辑
-// 2. 事务管理：确保数据一致�?
-// 3. 事件发布：支持事件驱动架�?
-// 4. 验证和授权：统一的业务验�?
+// 2. 事务管理：确保数据一致性
+// 3. 事件发布：支持事件驱动架构
+// 4. 验证和授权：统一的业务验证
 package services
 
 import (
@@ -107,7 +107,7 @@ type SearchNodesRequest struct {
 	Limit  int               `json:"limit"`
 }
 
-// GetNodesInAreaRequest 获取区域内节点请�?
+// GetNodesInAreaRequest 获取区域内节点请�?
 type GetNodesInAreaRequest struct {
 	MinX float64 `json:"min_x" binding:"required"`
 	MinY float64 `json:"min_y" binding:"required"`
@@ -145,7 +145,7 @@ func (s *nodeService) CreateNode(ctx context.Context, req CreateNodeRequest) (*d
 	// 1. 创建节点实体
 	node := domain.NewNode(req.Name, req.Position)
 
-	// 2. 设置可选属�?
+	// 2. 设置可选属�?
 	if req.Type != "" {
 		node.Type = req.Type
 	}
@@ -175,7 +175,7 @@ func (s *nodeService) CreateNode(ctx context.Context, req CreateNodeRequest) (*d
 		return nil, fmt.Errorf("节点验证失败: %w", err)
 	}
 
-	// 4. 持久�?
+	// 4. 持久�?
 	if err := s.nodeRepo.Create(ctx, node); err != nil {
 		return nil, fmt.Errorf("创建节点失败: %w", err)
 	}
@@ -198,7 +198,7 @@ func (s *nodeService) UpdateNode(ctx context.Context, req UpdateNodeRequest) (*d
 	// 1. 获取现有节点
 	node, err := s.nodeRepo.GetByID(ctx, req.ID)
 	if err != nil {
-		return nil, fmt.Errorf("节点不存�? %w", err)
+		return nil, fmt.Errorf("节点不存�? %w", err)
 	}
 
 	// 2. 应用更新
@@ -243,7 +243,7 @@ func (s *nodeService) UpdateNode(ctx context.Context, req UpdateNodeRequest) (*d
 		return nil, fmt.Errorf("节点验证失败: %w", err)
 	}
 
-	// 4. 持久化更�?
+	// 4. 持久化更�?
 	if err := s.nodeRepo.Update(ctx, node); err != nil {
 		return nil, fmt.Errorf("更新节点失败: %w", err)
 	}
@@ -253,20 +253,20 @@ func (s *nodeService) UpdateNode(ctx context.Context, req UpdateNodeRequest) (*d
 
 // DeleteNode 删除节点
 func (s *nodeService) DeleteNode(ctx context.Context, id domain.NodeID) error {
-	// 1. 检查节点是否存�?
+	// 1. 检查节点是否存�?
 	_, err := s.nodeRepo.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("节点不存�? %w", err)
+		return fmt.Errorf("节点不存�? %w", err)
 	}
 
 	// 2. 检查是否有路径连接 (业务规则: 不能删除有连接的节点)
 	connectedNodes, err := s.nodeRepo.GetConnectedNodes(ctx, id)
 	if err != nil {
-		return fmt.Errorf("检查节点连接失�? %w", err)
+		return fmt.Errorf("检查节点连接失败: %w", err)
 	}
 
 	if len(connectedNodes) > 0 {
-		return fmt.Errorf("不能删除有路径连接的节点，请先删除相关路�?)
+		return fmt.Errorf("不能删除有路径连接的节点，请先删除相关路径")
 	}
 
 	// 3. 执行删除
@@ -281,11 +281,11 @@ func (s *nodeService) DeleteNode(ctx context.Context, id domain.NodeID) error {
 func (s *nodeService) CreateNodes(ctx context.Context, req CreateNodesRequest) ([]*domain.Node, error) {
 	nodes := make([]*domain.Node, 0, len(req.Nodes))
 
-	// 1. 创建所有节点实�?
+	// 1. 创建所有节点实�?
 	for _, nodeReq := range req.Nodes {
 		node := domain.NewNode(nodeReq.Name, nodeReq.Position)
 
-		// 设置属�?
+		// 设置属�?
 		if nodeReq.Type != "" {
 			node.Type = nodeReq.Type
 		}
@@ -351,7 +351,7 @@ func (s *nodeService) GetNodes(ctx context.Context, req GetNodesRequest) (*GetNo
 		return nil, fmt.Errorf("统计节点数量失败: %w", err)
 	}
 
-	// 4. 计算总页�?
+	// 4. 计算总页�?
 	totalPages := int(total) / req.PageSize
 	if int(total)%req.PageSize > 0 {
 		totalPages++
@@ -366,11 +366,11 @@ func (s *nodeService) GetNodes(ctx context.Context, req GetNodesRequest) (*GetNo
 	}, nil
 }
 
-// ListNodes 获取所有节点列�?
+// ListNodes 获取所有节点列�?
 func (s *nodeService) ListNodes(ctx context.Context) ([]*domain.Node, error) {
-	// 构建查�选项，不分页
+	// 构建查�选项，不分页
 	options := repositories.ListOptions{
-		PageSize: 0, // 0 表示不分�?
+		PageSize: 0, // 0 表示不分�?
 	}
 
 	nodes, err := s.nodeRepo.List(ctx, options)
@@ -386,7 +386,7 @@ func (s *nodeService) UpdateNodePosition(ctx context.Context, id domain.NodeID, 
 	// 获取节点
 	node, err := s.nodeRepo.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("节点不存�? %w", err)
+		return fmt.Errorf("节点不存�? %w", err)
 	}
 
 	// 更新位置
@@ -459,13 +459,13 @@ func (s *nodeService) SearchNodes(ctx context.Context, req SearchNodesRequest) (
 func (s *nodeService) GetNodesInArea(ctx context.Context, req GetNodesInAreaRequest) ([]*domain.Node, error) {
 	nodes, err := s.nodeRepo.GetByArea(ctx, req.MinX, req.MinY, req.MaxX, req.MaxY)
 	if err != nil {
-		return nil, fmt.Errorf("获取区域内节点失�? %w", err)
+		return nil, fmt.Errorf("获取区域内节点失�? %w", err)
 	}
 
 	return nodes, nil
 }
 
-// GetNearbyNodes 获取附近的节�?
+// GetNearbyNodes 获取附近的节�?
 func (s *nodeService) GetNearbyNodes(ctx context.Context, req GetNearbyNodesRequest) ([]*domain.Node, error) {
 	nodes, err := s.nodeRepo.GetNearby(ctx, req.Position, req.Radius)
 	if err != nil {
@@ -480,7 +480,7 @@ func (s *nodeService) GetNearbyNodes(ctx context.Context, req GetNearbyNodesRequ
 	return nodes, nil
 }
 
-// GetConnectedNodes 获取连接的节�?
+// GetConnectedNodes 获取连接的节�?
 func (s *nodeService) GetConnectedNodes(ctx context.Context, nodeID domain.NodeID) ([]*domain.Node, error) {
 	nodes, err := s.nodeRepo.GetConnectedNodes(ctx, nodeID)
 	if err != nil {
@@ -509,11 +509,11 @@ func (s *nodeService) ValidateNode(ctx context.Context, node *domain.Node) error
 
 	// 2. 业务规则验证
 
-	// 名称不能重复（可选的业务规则�?
+	// 名称不能重复（可选的业务规则�?
 	// 这里可以添加更多业务验证逻辑
 
-	// 3. 位置合理性验�?
-	// 可以验证位置是否在允许的范围�?
+	// 3. 位置合理性验�?
+	// 可以验证位置是否在允许的范围�?
 
 	return nil
 }

@@ -9,7 +9,7 @@ import (
 	"robot-path-editor/internal/services"
 )
 
-// Handlers HTTP处理器集�?
+// Handlers HTTP处理器集�?
 type Handlers struct {
 	nodeService   services.NodeService
 	pathService   services.PathService
@@ -17,7 +17,7 @@ type Handlers struct {
 	dbService     services.DatabaseService
 }
 
-// New 创建处理器实�?
+// New 创建处理器实�?
 func New(
 	nodeService services.NodeService,
 	pathService services.PathService,
@@ -32,7 +32,7 @@ func New(
 	}
 }
 
-// HealthCheck 健康检�?
+// HealthCheck 健康检�?
 func (h *Handlers) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
@@ -40,7 +40,7 @@ func (h *Handlers) HealthCheck(c *gin.Context) {
 	})
 }
 
-// ReadinessCheck 就绪检�?
+// ReadinessCheck 就绪检�?
 func (h *Handlers) ReadinessCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ready",
@@ -48,7 +48,7 @@ func (h *Handlers) ReadinessCheck(c *gin.Context) {
 	})
 }
 
-// 节点相关处理�?
+// 节点相关处理�?
 func (h *Handlers) ListNodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"nodes": []interface{}{}})
 }
@@ -73,7 +73,7 @@ func (h *Handlers) UpdateNodePosition(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "更新节点位置"})
 }
 
-// 路径相关处理�?
+// 路径相关处理�?
 func (h *Handlers) ListPaths(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"paths": []interface{}{}})
 }
@@ -98,7 +98,7 @@ func (h *Handlers) GeneratePaths(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "生成路径"})
 }
 
-// 布局相关处理�?
+// 布局相关处理�?
 func (h *Handlers) ArrangeNodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "排列节点"})
 }
@@ -113,19 +113,19 @@ func (h *Handlers) ListDatabaseConnections(c *gin.Context) {
 }
 
 func (h *Handlers) CreateDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "创建数据库连�?})
+	c.JSON(http.StatusOK, gin.H{"message": "创建数据库连接"})
 }
 
 func (h *Handlers) UpdateDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "更新数据库连�?})
+	c.JSON(http.StatusOK, gin.H{"message": "更新数据库连接"})
 }
 
 func (h *Handlers) DeleteDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "删除数据库连�?})
+	c.JSON(http.StatusOK, gin.H{"message": "删除数据库连接"})
 }
 
 func (h *Handlers) TestDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "测试数据库连�?})
+	c.JSON(http.StatusOK, gin.H{"message": "测试数据库连接"})
 }
 
 func (h *Handlers) ListTables(c *gin.Context) {
@@ -141,31 +141,31 @@ func (h *Handlers) ListTableMappings(c *gin.Context) {
 }
 
 func (h *Handlers) CreateTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "创建表映�?})
+	c.JSON(http.StatusOK, gin.H{"message": "创建表映射"})
 }
 
 func (h *Handlers) UpdateTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "更新表映�?})
+	c.JSON(http.StatusOK, gin.H{"message": "更新表映射"})
 }
 
 func (h *Handlers) DeleteTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "删除表映�?})
+	c.JSON(http.StatusOK, gin.H{"message": "删除表映射"})
 }
 
-// 分析相关处理�?
+// 分析相关处理器
 func (h *Handlers) FindShortestPath(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "查找最短路�?})
+	c.JSON(http.StatusOK, gin.H{"message": "查找最短路径"})
 }
 
 func (h *Handlers) AnalyzeConnectivity(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "分析连通�?})
+	c.JSON(http.StatusOK, gin.H{"message": "分析连通性"})
 }
 
 func (h *Handlers) DetectCycles(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "检测环�?})
+	c.JSON(http.StatusOK, gin.H{"message": "检测环路"})
 }
 
-// WebSocket处理�?
+// WebSocket处理器
 func (h *Handlers) CanvasWebSocket(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "画布WebSocket"})
 }

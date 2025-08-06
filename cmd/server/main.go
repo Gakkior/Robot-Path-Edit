@@ -1,13 +1,13 @@
-// Package main 是应用程序的入口�?
+// Package main 是应用程序的入口点
 //
 // 架构设计参考：
-// - Kubernetes API Server的启动模�?
-// - Grafana Server的配置管�?
+// - Kubernetes API Server的启动模式
+// - Grafana Server的配置管理
 // - Docker的命令行接口设计
 //
-// 设计理念�?
+// 设计理念：
 // 1. 单一职责：main函数只负责启动，不包含业务逻辑
-// 2. 配置驱动：通过配置文件和环境变量控制行�?
+// 2. 配置驱动：通过配置文件和环境变量控制行为
 // 3. 优雅启停：支持信号处理和资源清理
 package main
 
@@ -36,7 +36,7 @@ var (
 )
 
 func main() {
-	// 创建根命�?- 参考kubectl的命令结�?
+	// 创建根命�?- 参考kubectl的命令结�?
 	rootCmd := &cobra.Command{
 		Use:     "robot-path-editor",
 		Short:   "机器人路径编辑器 - 通用的点位和路径管理工具",
@@ -45,14 +45,14 @@ func main() {
 		RunE:    runServer,
 	}
 
-	// 添加命令行参�?- 参考Grafana的配置选项
+	// 添加命令行参�?- 参考Grafana的配置选项
 	rootCmd.PersistentFlags().String("config", "", "配置文件路径")
 	rootCmd.PersistentFlags().String("log-level", "info", "日志级别 (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("addr", ":8080", "服务监听地址")
-	rootCmd.PersistentFlags().String("db-type", "sqlite", "数据库类�?(sqlite, mysql)")
+	rootCmd.PersistentFlags().String("db-type", "sqlite", "数据库类�?(sqlite, mysql)")
 	rootCmd.PersistentFlags().String("db-dsn", "./data/app.db", "数据库连接字符串")
 
-	// 绑定参数到viper - 参考Kubernetes的配置管�?
+	// 绑定参数到viper - 参考Kubernetes的配置管�?
 	viper.BindPFlags(rootCmd.PersistentFlags())
 
 	if err := rootCmd.Execute(); err != nil {
@@ -60,8 +60,8 @@ func main() {
 	}
 }
 
-// runServer 启动服务�?
-// 参考Grafana Server的启动流�?
+// runServer 启动服务�?
+// 参考Grafana Server的启动流�?
 func runServer(cmd *cobra.Command, args []string) error {
 	// 1. 加载配置
 	cfg, err := config.Load()
@@ -69,7 +69,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("加载配置失败: %w", err)
 	}
 
-	// 2. 初始化日�?- 参考Kubernetes的结构化日志
+	// 2. 初始化日�?- 参考Kubernetes的结构化日志
 	logger.Init(cfg.Logger)
 
 	log := logrus.WithFields(logrus.Fields{
@@ -78,7 +78,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 		"git_hash":   gitHash,
 	})
 
-	log.Info("机器人路径编辑器启动�?..")
+	log.Info("机器人路径编辑器启动�?..")
 
 	// 3. 创建应用实例 - 依赖注入模式，参考Uber FX
 	application, err := app.New(cfg)
@@ -86,7 +86,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("创建应用实例失败: %w", err)
 	}
 
-	// 4. 设置信号处理 - 参考Docker的优雅停�?
+	// 4. 设置信号处理 - 参考Docker的优雅停�?
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -102,25 +102,25 @@ func runServer(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	log.WithField("addr", cfg.Server.Addr).Info("服务器启动成�?)
+	log.WithField("addr", cfg.Server.Addr).Info("服务器启动成功")
 
 	// 6. 等待停止信号
 	select {
 	case sig := <-sigChan:
-		log.WithField("signal", sig).Info("收到停止信号，开始优雅关�?..")
+		log.WithField("signal", sig).Info("收到停止信号，开始优雅关闭...")
 	case <-ctx.Done():
 		log.Info("应用上下文被取消")
 	}
 
-	// 7. 优雅关闭 - 参考Kubernetes的优雅终�?
+	// 7. 优雅关闭 - 参考Kubernetes的优雅终止
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 
 	if err := application.Stop(shutdownCtx); err != nil {
-		log.WithError(err).Error("应用关闭时发生错�?)
+		log.WithError(err).Error("应用关闭时发生错误")
 		return err
 	}
 
-	log.Info("应用已成功关�?)
+	log.Info("应用已成功关闭")
 	return nil
 }

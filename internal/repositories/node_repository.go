@@ -1,15 +1,15 @@
-// Package repositories 实现数据访问�?
+// Package repositories 实现数据访问层
 //
 // 设计参考：
-// - DDD的仓储模�?
-// - Kubernetes的存储抽�?
-// - GitHub的仓储实现模�?
+// - DDD的仓储模式
+// - Kubernetes的存储抽象
+// - GitHub的仓储实现模式
 //
-// 特点�?
+// 特点：
 // 1. 接口抽象：定义清晰的数据访问接口
 // 2. 实现分离：支持不同的存储后端
 // 3. 查询优化：支持复杂查询和分页
-// 4. 缓存友好：设计便于缓存集�?
+// 4. 缓存友好：设计便于缓存集成
 package repositories
 
 import (
@@ -23,7 +23,7 @@ import (
 )
 
 // NodeRepository 节点仓储接口
-// 定义节点数据访问的所有操�?
+// 定义节点数据访问的所有操�?
 type NodeRepository interface {
 	// 基础CRUD操作
 	Create(ctx context.Context, node *domain.Node) error
@@ -49,13 +49,13 @@ type NodeRepository interface {
 	GetConnectedNodes(ctx context.Context, nodeID domain.NodeID) ([]*domain.Node, error)
 	GetIsolatedNodes(ctx context.Context) ([]*domain.Node, error)
 
-	// 元数据查�?
+	// 元数据查�?
 	GetByLabels(ctx context.Context, labels map[string]string) ([]*domain.Node, error)
 	GetByType(ctx context.Context, nodeType domain.NodeType) ([]*domain.Node, error)
 	GetByStatus(ctx context.Context, status domain.NodeStatus) ([]*domain.Node, error)
 }
 
-// NodeFilter 节点查询过滤�?
+// NodeFilter 节点查询过滤�?
 type NodeFilter struct {
 	IDs    []domain.NodeID   `json:"ids,omitempty"`
 	Name   string            `json:"name,omitempty"`
@@ -75,8 +75,8 @@ type NodeFilter struct {
 // ListOptions 列表查询选项
 type ListOptions struct {
 	Filter   NodeFilter `json:"filter"`
-	Page     int        `json:"page"`      // 页码，从1开�?
-	PageSize int        `json:"page_size"` // 页大�?
+	Page     int        `json:"page"`      // 页码，从1开�?
+	PageSize int        `json:"page_size"` // 页大�?
 	OrderBy  string     `json:"order_by"`  // 排序字段
 	Order    string     `json:"order"`     // 排序方向: asc, desc
 }
@@ -99,7 +99,7 @@ func (r *nodeRepository) Create(ctx context.Context, node *domain.Node) error {
 		return fmt.Errorf("节点验证失败: %w", err)
 	}
 
-	// 检查是否为GORM数据�?
+	// 检查是否为GORM数据�?
 	if gormDB := r.db.GORMDB(); gormDB != nil {
 		return gormDB.WithContext(ctx).Create(node).Error
 	}
@@ -111,7 +111,7 @@ func (r *nodeRepository) Create(ctx context.Context, node *domain.Node) error {
 		return memDB.CreateNode(node)
 	}
 
-	return fmt.Errorf("不支持的数据库类�?)
+	return fmt.Errorf("不支持的数据库类型")
 }
 
 // GetByID 根据ID获取节点
@@ -120,7 +120,7 @@ func (r *nodeRepository) GetByID(ctx context.Context, id domain.NodeID) (*domain
 	err := r.db.GORMDB().WithContext(ctx).Where("id = ?", id).First(&node).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("节点不存�? %s", id)
+			return nil, fmt.Errorf("节点不存在: %s", id)
 		}
 		return nil, err
 	}
@@ -133,13 +133,13 @@ func (r *nodeRepository) Update(ctx context.Context, node *domain.Node) error {
 		return fmt.Errorf("节点验证失败: %w", err)
 	}
 
-	result := r.db.DB().WithContext(ctx).Save(node)
+	result := r.db.GORMDB().WithContext(ctx).Save(node)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("节点不存�? %s", node.ID)
+		return fmt.Errorf("节点不存�? %s", node.ID)
 	}
 
 	return nil
@@ -147,13 +147,13 @@ func (r *nodeRepository) Update(ctx context.Context, node *domain.Node) error {
 
 // Delete 删除节点
 func (r *nodeRepository) Delete(ctx context.Context, id domain.NodeID) error {
-	result := r.db.DB().WithContext(ctx).Delete(&domain.Node{}, "id = ?", id)
+	result := r.db.GORMDB().WithContext(ctx).Delete(&domain.Node{}, "id = ?", id)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("节点不存�? %s", id)
+		return fmt.Errorf("节点不存�? %s", id)
 	}
 
 	return nil
@@ -161,14 +161,14 @@ func (r *nodeRepository) Delete(ctx context.Context, id domain.NodeID) error {
 
 // CreateBatch 批量创建节点
 func (r *nodeRepository) CreateBatch(ctx context.Context, nodes []*domain.Node) error {
-	// 验证所有节�?
+	// 验证所有节�?
 	for _, node := range nodes {
 		if err := node.IsValid(); err != nil {
 			return fmt.Errorf("节点验证失败: %w", err)
 		}
 	}
 
-	// 批量插入 - 使用事务确保一致�?
+	// 批量插入 - 使用事务确保一致�?
 	return r.db.Transaction(ctx, func(tx *gorm.DB) error {
 		return tx.WithContext(ctx).CreateInBatches(nodes, 100).Error
 	})
@@ -184,7 +184,7 @@ func (r *nodeRepository) GetByIDs(ctx context.Context, ids []domain.NodeID) ([]*
 		stringIDs[i] = string(id)
 	}
 
-	err := r.db.DB().WithContext(ctx).Where("id IN ?", stringIDs).Find(&nodes).Error
+	err := r.db.GORMDB().WithContext(ctx).Where("id IN ?", stringIDs).Find(&nodes).Error
 	return nodes, err
 }
 
@@ -218,9 +218,9 @@ func (r *nodeRepository) DeleteBatch(ctx context.Context, ids []domain.NodeID) e
 func (r *nodeRepository) List(ctx context.Context, options ListOptions) ([]*domain.Node, error) {
 	var nodes []*domain.Node
 
-	query := r.db.DB().WithContext(ctx)
+	query := r.db.GORMDB().WithContext(ctx)
 
-	// 应用过滤�?
+	// 应用过滤�?
 	query = r.applyFilter(query, options.Filter)
 
 	// 应用排序
@@ -231,7 +231,7 @@ func (r *nodeRepository) List(ctx context.Context, options ListOptions) ([]*doma
 		}
 		query = query.Order(fmt.Sprintf("%s %s", options.OrderBy, order))
 	} else {
-		query = query.Order("created_at desc") // 默认按创建时间降�?
+		query = query.Order("created_at desc") // 默认按创建时间降�?
 	}
 
 	// 应用分页
@@ -251,7 +251,7 @@ func (r *nodeRepository) List(ctx context.Context, options ListOptions) ([]*doma
 func (r *nodeRepository) Count(ctx context.Context, filter NodeFilter) (int64, error) {
 	var count int64
 
-	query := r.db.DB().WithContext(ctx).Model(&domain.Node{})
+	query := r.db.GORMDB().WithContext(ctx).Model(&domain.Node{})
 	query = r.applyFilter(query, filter)
 
 	err := query.Count(&count).Error
@@ -262,7 +262,7 @@ func (r *nodeRepository) Count(ctx context.Context, filter NodeFilter) (int64, e
 func (r *nodeRepository) GetByArea(ctx context.Context, minX, minY, maxX, maxY float64) ([]*domain.Node, error) {
 	var nodes []*domain.Node
 
-	err := r.db.DB().WithContext(ctx).
+	err := r.db.GORMDB().WithContext(ctx).
 		Where("pos_x BETWEEN ? AND ?", minX, maxX).
 		Where("pos_y BETWEEN ? AND ?", minY, maxY).
 		Find(&nodes).Error
@@ -270,17 +270,17 @@ func (r *nodeRepository) GetByArea(ctx context.Context, minX, minY, maxX, maxY f
 	return nodes, err
 }
 
-// GetNearby 获取指定位置附近的节�?
+// GetNearby 获取指定位置附近的节�?
 func (r *nodeRepository) GetNearby(ctx context.Context, position domain.Position, radius float64) ([]*domain.Node, error) {
 	var nodes []*domain.Node
 
-	// 使用简单的矩形范围查询（可优化为真正的圆形范围�?
+	// 使用简单的矩形范围查询（可优化为真正的圆形范围�?
 	minX := position.X - radius
 	maxX := position.X + radius
 	minY := position.Y - radius
 	maxY := position.Y + radius
 
-	err := r.db.DB().WithContext(ctx).
+	err := r.db.GORMDB().WithContext(ctx).
 		Where("pos_x BETWEEN ? AND ?", minX, maxX).
 		Where("pos_y BETWEEN ? AND ?", minY, maxY).
 		Find(&nodes).Error
@@ -289,12 +289,12 @@ func (r *nodeRepository) GetNearby(ctx context.Context, position domain.Position
 	return nodes, err
 }
 
-// GetConnectedNodes 获取与指定节点连接的所有节�?
+// GetConnectedNodes 获取与指定节点连接的所有节�?
 func (r *nodeRepository) GetConnectedNodes(ctx context.Context, nodeID domain.NodeID) ([]*domain.Node, error) {
 	var nodes []*domain.Node
 
-	// 通过路径表关联查�?
-	err := r.db.DB().WithContext(ctx).
+	// 通过路径表关联查�?
+	err := r.db.GORMDB().WithContext(ctx).
 		Joins("JOIN paths ON (nodes.id = paths.start_node_id OR nodes.id = paths.end_node_id)").
 		Where("(paths.start_node_id = ? OR paths.end_node_id = ?) AND nodes.id != ?", nodeID, nodeID, nodeID).
 		Where("paths.status = ?", domain.PathStatusActive).
@@ -304,12 +304,12 @@ func (r *nodeRepository) GetConnectedNodes(ctx context.Context, nodeID domain.No
 	return nodes, err
 }
 
-// GetIsolatedNodes 获取孤立节点（没有连接的节点�?
+// GetIsolatedNodes 获取孤立节点（没有连接的节点�?
 func (r *nodeRepository) GetIsolatedNodes(ctx context.Context) ([]*domain.Node, error) {
 	var nodes []*domain.Node
 
 	// 左连接路径表，查找没有路径的节点
-	err := r.db.DB().WithContext(ctx).
+	err := r.db.GORMDB().WithContext(ctx).
 		Where("NOT EXISTS (SELECT 1 FROM paths WHERE nodes.id = paths.start_node_id OR nodes.id = paths.end_node_id)").
 		Find(&nodes).Error
 
@@ -320,9 +320,9 @@ func (r *nodeRepository) GetIsolatedNodes(ctx context.Context) ([]*domain.Node, 
 func (r *nodeRepository) GetByLabels(ctx context.Context, labels map[string]string) ([]*domain.Node, error) {
 	var nodes []*domain.Node
 
-	query := r.db.DB().WithContext(ctx)
+	query := r.db.GORMDB().WithContext(ctx)
 
-	// 使用JSON查询（需要数据库支持�?
+	// 使用JSON查询（需要数据库支持�?
 	for key, value := range labels {
 		query = query.Where("JSON_EXTRACT(labels, ?) = ?", "$."+key, value)
 	}
@@ -334,18 +334,18 @@ func (r *nodeRepository) GetByLabels(ctx context.Context, labels map[string]stri
 // GetByType 根据类型查询节点
 func (r *nodeRepository) GetByType(ctx context.Context, nodeType domain.NodeType) ([]*domain.Node, error) {
 	var nodes []*domain.Node
-	err := r.db.DB().WithContext(ctx).Where("type = ?", nodeType).Find(&nodes).Error
+	err := r.db.GORMDB().WithContext(ctx).Where("type = ?", nodeType).Find(&nodes).Error
 	return nodes, err
 }
 
-// GetByStatus 根据状态查询节�?
+// GetByStatus 根据状态查询节�?
 func (r *nodeRepository) GetByStatus(ctx context.Context, status domain.NodeStatus) ([]*domain.Node, error) {
 	var nodes []*domain.Node
-	err := r.db.DB().WithContext(ctx).Where("status = ?", status).Find(&nodes).Error
+	err := r.db.GORMDB().WithContext(ctx).Where("status = ?", status).Find(&nodes).Error
 	return nodes, err
 }
 
-// applyFilter 应用查询过滤�?
+// applyFilter 应用查询过滤�?
 func (r *nodeRepository) applyFilter(query *gorm.DB, filter NodeFilter) *gorm.DB {
 	// ID过滤
 	if len(filter.IDs) > 0 {
@@ -366,7 +366,7 @@ func (r *nodeRepository) applyFilter(query *gorm.DB, filter NodeFilter) *gorm.DB
 		query = query.Where("type = ?", filter.Type)
 	}
 
-	// 状态过�?
+	// 状态过�?
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
 	}

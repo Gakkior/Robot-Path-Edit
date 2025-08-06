@@ -313,7 +313,7 @@ func (p *Path) IsValid() error {
 		return fmt.Errorf("路径的起始节点和结束节点不能相同")
 	}
 	if p.Weight < 0 {
-		return fmt.Errorf("路径权重不能为负�?)
+		return fmt.Errorf("路径权重不能为负数")
 	}
 	return nil
 }

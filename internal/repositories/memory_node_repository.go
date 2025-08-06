@@ -1,5 +1,5 @@
 // Package repositories 内存节点仓储实现
-// 用于演示，不依赖外部数据�?
+// 用于演示，不依赖外部数据库
 package repositories
 
 import (
@@ -34,7 +34,7 @@ func (r *memoryNodeRepository) Create(ctx context.Context, node *domain.Node) er
 	defer r.mu.Unlock()
 
 	if _, exists := r.nodes[string(node.ID)]; exists {
-		return fmt.Errorf("节点已存�? %s", node.ID)
+		return fmt.Errorf("节点已存�? %s", node.ID)
 	}
 
 	r.nodes[string(node.ID)] = node
@@ -48,10 +48,10 @@ func (r *memoryNodeRepository) GetByID(ctx context.Context, id domain.NodeID) (*
 
 	node, exists := r.nodes[string(id)]
 	if !exists {
-		return nil, fmt.Errorf("节点不存�? %s", id)
+		return nil, fmt.Errorf("节点不存�? %s", id)
 	}
 
-	// 返回副本以避免并发修�?
+	// 返回副本以避免并发修�?
 	nodeCopy := *node
 	return &nodeCopy, nil
 }
@@ -66,7 +66,7 @@ func (r *memoryNodeRepository) Update(ctx context.Context, node *domain.Node) er
 	defer r.mu.Unlock()
 
 	if _, exists := r.nodes[string(node.ID)]; !exists {
-		return fmt.Errorf("节点不存�? %s", node.ID)
+		return fmt.Errorf("节点不存�? %s", node.ID)
 	}
 
 	r.nodes[string(node.ID)] = node
@@ -79,7 +79,7 @@ func (r *memoryNodeRepository) Delete(ctx context.Context, id domain.NodeID) err
 	defer r.mu.Unlock()
 
 	if _, exists := r.nodes[string(id)]; !exists {
-		return fmt.Errorf("节点不存�? %s", id)
+		return fmt.Errorf("节点不存�? %s", id)
 	}
 
 	delete(r.nodes, string(id))
@@ -137,7 +137,7 @@ func (r *memoryNodeRepository) List(ctx context.Context, options ListOptions) ([
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	// 首先应用过滤�?
+	// 首先应用过滤�?
 	var filtered []*domain.Node
 	for _, node := range r.nodes {
 		if r.matchesFilter(node, options.Filter) {
@@ -199,7 +199,7 @@ func (r *memoryNodeRepository) GetByArea(ctx context.Context, minX, minY, maxX, 
 	return nodes, nil
 }
 
-// GetNearby 获取指定位置附近的节�?
+// GetNearby 获取指定位置附近的节�?
 func (r *memoryNodeRepository) GetNearby(ctx context.Context, position domain.Position, radius float64) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -216,15 +216,15 @@ func (r *memoryNodeRepository) GetNearby(ctx context.Context, position domain.Po
 	return nodes, nil
 }
 
-// GetConnectedNodes 获取与指定节点连接的所有节�?
+// GetConnectedNodes 获取与指定节点连接的所有节�?
 func (r *memoryNodeRepository) GetConnectedNodes(ctx context.Context, nodeID domain.NodeID) ([]*domain.Node, error) {
-	// 内存实现中，这需要路径信息，暂时返回空列�?
+	// 内存实现中，这需要路径信息，暂时返回空列�?
 	return []*domain.Node{}, nil
 }
 
 // GetIsolatedNodes 获取孤立节点
 func (r *memoryNodeRepository) GetIsolatedNodes(ctx context.Context) ([]*domain.Node, error) {
-	// 内存实现中，这需要路径信息，暂时返回所有节�?
+	// 内存实现中，这需要路径信息，暂时返回所有节�?
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -277,7 +277,7 @@ func (r *memoryNodeRepository) GetByType(ctx context.Context, nodeType domain.No
 	return nodes, nil
 }
 
-// GetByStatus 根据状态查询节�?
+// GetByStatus 根据状态查询节�?
 func (r *memoryNodeRepository) GetByStatus(ctx context.Context, status domain.NodeStatus) ([]*domain.Node, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -319,7 +319,7 @@ func (r *memoryNodeRepository) matchesFilter(node *domain.Node, filter NodeFilte
 		return false
 	}
 
-	// 状态过�?
+	// 状态过�?
 	if filter.Status != "" && node.Status != filter.Status {
 		return false
 	}

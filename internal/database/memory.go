@@ -1,4 +1,4 @@
-// Package database 内存数据库实�?
+// Package database 内存数据库实现
 // 用于演示和开发环境，不依赖外部数据库
 package database
 
@@ -13,7 +13,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// memoryDatabase 内存数据库实�?
+// memoryDatabase 内存数据库实�?
 type memoryDatabase struct {
 	nodes       map[string]*domain.Node
 	paths       map[string]*domain.Path
@@ -22,7 +22,7 @@ type memoryDatabase struct {
 	mu          sync.RWMutex
 }
 
-// NewMemoryDatabase 创建内存数据库实�?
+// NewMemoryDatabase 创建内存数据库实�?
 func NewMemoryDatabase() Database {
 	return &memoryDatabase{
 		nodes:       make(map[string]*domain.Node),
@@ -36,7 +36,7 @@ func NewMemoryDatabase() Database {
 func NewMemoryDatabaseFromConfig(cfg config.DatabaseConfig) (Database, error) {
 	db := NewMemoryDatabase()
 
-	// 自动迁移（在内存数据库中是空操作�?
+	// 自动迁移（在内存数据库中是空操作�?
 	if cfg.AutoMigrate {
 		if err := db.AutoMigrate(); err != nil {
 			return nil, err
@@ -46,17 +46,17 @@ func NewMemoryDatabaseFromConfig(cfg config.DatabaseConfig) (Database, error) {
 	return db, nil
 }
 
-// DB 返回nil（内存数据库不需要GORM�?
+// DB 返回nil（内存数据库不需要GORM�?
 func (m *memoryDatabase) DB() interface{} {
 	return nil
 }
 
-// GORMDB 返回nil（内存数捺�不使用GORM�?
+// GORMDB 返回nil（内存数捺�不使用GORM�?
 func (m *memoryDatabase) GORMDB() *gorm.DB {
 	return nil
 }
 
-// Close 关闭数据库（内存数据库无需关闭�?
+// Close 关闭数据库（内存数据库无需关闭�?
 func (m *memoryDatabase) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -70,7 +70,7 @@ func (m *memoryDatabase) Close() error {
 	return nil
 }
 
-// Ping 检查数据库连接状态（内存数据库总是可用�?
+// Ping 检查数据库连接状态（内存数据库总是可用�?
 func (m *memoryDatabase) Ping(ctx context.Context) error {
 	return nil
 }
@@ -84,7 +84,7 @@ func (m *memoryDatabase) Transaction(ctx context.Context, fn func(tx interface{}
 	return fn(m)
 }
 
-// AutoMigrate 自动迁移数据库结构（内存数据库无需迁移�?
+// AutoMigrate 自动迁移数据库结构（内存数据库无需迁移�?
 func (m *memoryDatabase) AutoMigrate() error {
 	// 内存数据库不需要迁移，直接返回成功
 	return nil
@@ -98,7 +98,7 @@ func (m *memoryDatabase) CreateNode(node *domain.Node) error {
 	defer m.mu.Unlock()
 
 	if _, exists := m.nodes[string(node.ID)]; exists {
-		return fmt.Errorf("节点已存�? %s", node.ID)
+		return fmt.Errorf("节点已存�? %s", node.ID)
 	}
 
 	m.nodes[string(node.ID)] = node
@@ -112,7 +112,7 @@ func (m *memoryDatabase) GetNode(id string) (*domain.Node, error) {
 
 	node, exists := m.nodes[id]
 	if !exists {
-		return nil, fmt.Errorf("节点不存�? %s", id)
+		return nil, fmt.Errorf("节点不存�? %s", id)
 	}
 
 	return node, nil
@@ -124,7 +124,7 @@ func (m *memoryDatabase) UpdateNode(node *domain.Node) error {
 	defer m.mu.Unlock()
 
 	if _, exists := m.nodes[string(node.ID)]; !exists {
-		return fmt.Errorf("节点不存�? %s", node.ID)
+		return fmt.Errorf("节点不存�? %s", node.ID)
 	}
 
 	m.nodes[string(node.ID)] = node
@@ -137,14 +137,14 @@ func (m *memoryDatabase) DeleteNode(id string) error {
 	defer m.mu.Unlock()
 
 	if _, exists := m.nodes[id]; !exists {
-		return fmt.Errorf("节点不存�? %s", id)
+		return fmt.Errorf("节点不存�? %s", id)
 	}
 
 	delete(m.nodes, id)
 	return nil
 }
 
-// ListNodes 列出所有节�?
+// ListNodes 列出所有节�?
 func (m *memoryDatabase) ListNodes() ([]*domain.Node, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -165,7 +165,7 @@ func (m *memoryDatabase) CreatePath(path *domain.Path) error {
 	defer m.mu.Unlock()
 
 	if _, exists := m.paths[string(path.ID)]; exists {
-		return fmt.Errorf("路径已存�? %s", path.ID)
+		return fmt.Errorf("路径已存�? %s", path.ID)
 	}
 
 	m.paths[string(path.ID)] = path
@@ -179,7 +179,7 @@ func (m *memoryDatabase) GetPath(id string) (*domain.Path, error) {
 
 	path, exists := m.paths[id]
 	if !exists {
-		return nil, fmt.Errorf("路径不存�? %s", id)
+		return nil, fmt.Errorf("路径不存�? %s", id)
 	}
 
 	return path, nil
@@ -191,7 +191,7 @@ func (m *memoryDatabase) UpdatePath(path *domain.Path) error {
 	defer m.mu.Unlock()
 
 	if _, exists := m.paths[string(path.ID)]; !exists {
-		return fmt.Errorf("路径不存�? %s", path.ID)
+		return fmt.Errorf("路径不存�? %s", path.ID)
 	}
 
 	m.paths[string(path.ID)] = path
@@ -204,14 +204,14 @@ func (m *memoryDatabase) DeletePath(id string) error {
 	defer m.mu.Unlock()
 
 	if _, exists := m.paths[id]; !exists {
-		return fmt.Errorf("路径不存�? %s", id)
+		return fmt.Errorf("路径不存�? %s", id)
 	}
 
 	delete(m.paths, id)
 	return nil
 }
 
-// ListPaths 列出所有路�?
+// ListPaths 列出所有路�?
 func (m *memoryDatabase) ListPaths() ([]*domain.Path, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

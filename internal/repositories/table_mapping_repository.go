@@ -1,4 +1,4 @@
-// Package repositories 表映射仓储实�?
+// Package repositories 表映射仓储实现
 package repositories
 
 import (
@@ -8,7 +8,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// TableMappingRepository 表映射仓储接�?
+// TableMappingRepository 表映射仓储接�?
 type TableMappingRepository interface {
 	Create(ctx context.Context, mapping *domain.TableMapping) error
 	GetByID(ctx context.Context, id string) (*domain.TableMapping, error)

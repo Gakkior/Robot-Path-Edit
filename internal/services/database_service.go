@@ -1,4 +1,4 @@
-// Package services 数据库服务实�?
+// Package services 数据库服务实现
 package services
 
 import (
@@ -8,7 +8,7 @@ import (
 	"robot-path-editor/internal/repositories"
 )
 
-// DatabaseService 数据库服务接�?
+// DatabaseService 数据库服务接�?
 type DatabaseService interface {
 	CreateDatabaseConnection(ctx context.Context, conn *domain.DatabaseConnection) error
 	GetDatabaseConnections(ctx context.Context) ([]*domain.DatabaseConnection, error)

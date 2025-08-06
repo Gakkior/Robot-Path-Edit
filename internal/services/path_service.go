@@ -76,13 +76,13 @@ func NewPathService(pathRepo repositories.PathRepository, nodeRepo repositories.
 
 // CreatePath 创建路径
 func (s *pathService) CreatePath(ctx context.Context, req CreatePathRequest) (*domain.Path, error) {
-	// 验证起始和结束节点存�?
+	// 验证起始和结束节点存在
 	if _, err := s.nodeRepo.GetByID(ctx, req.StartNodeID); err != nil {
-		return nil, fmt.Errorf("起始节点不存�? %w", err)
+		return nil, fmt.Errorf("起始节点不存在: %w", err)
 	}
 
 	if _, err := s.nodeRepo.GetByID(ctx, req.EndNodeID); err != nil {
-		return nil, fmt.Errorf("结束节点不存�? %w", err)
+		return nil, fmt.Errorf("结束节点不存在: %w", err)
 	}
 
 	// 创建路径实体
@@ -101,7 +101,7 @@ func (s *pathService) CreatePath(ctx context.Context, req CreatePathRequest) (*d
 		path.Properties = req.Properties
 	}
 
-	// 持久�?
+	// 持久�?
 	if err := s.pathRepo.Create(ctx, path); err != nil {
 		return nil, fmt.Errorf("创建路径失败: %w", err)
 	}
@@ -118,7 +118,7 @@ func (s *pathService) GetPath(ctx context.Context, id domain.PathID) (*domain.Pa
 func (s *pathService) UpdatePath(ctx context.Context, req UpdatePathRequest) (*domain.Path, error) {
 	path, err := s.pathRepo.GetByID(ctx, req.ID)
 	if err != nil {
-		return nil, fmt.Errorf("路径不存�? %w", err)
+		return nil, fmt.Errorf("路径不存�? %w", err)
 	}
 
 	if req.Name != nil {
@@ -193,22 +193,22 @@ func (s *pathService) GetPaths(ctx context.Context, req GetPathsRequest) (*GetPa
 	}, nil
 }
 
-// ListPaths 获取所有路径列�?
+// ListPaths 获取所有路径列�?
 func (s *pathService) ListPaths(ctx context.Context) ([]*domain.Path, error) {
-	// 构建查�选项，不分页
+	// 构建查�选项，不分页
 	options := repositories.PathListOptions{
-		PageSize: 0, // 0 表示不分�?
+		PageSize: 0, // 0 表示不分�?
 	}
 
 	paths, err := s.pathRepo.List(ctx, options)
 	if err != nil {
-		return nil, fmt.Errorf("获取跾�列表失败: %w", err)
+		return nil, fmt.Errorf("获取跾�列表失败: %w", err)
 	}
 
 	return paths, nil
 }
 
-// GetPathsByNode 获取节点相关的路�?
+// GetPathsByNode 获取节点相关的路�?
 func (s *pathService) GetPathsByNode(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error) {
 	return s.pathRepo.GetByNode(ctx, nodeID)
 }

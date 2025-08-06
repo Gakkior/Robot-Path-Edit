@@ -1,5 +1,5 @@
 // Package services Mock服务实现
-// 用于演示模式，提供基本功�?
+// 用于演示模式，提供基本功能
 package services
 
 import (
@@ -21,7 +21,7 @@ func (s *MockPathService) GetPath(ctx context.Context, id domain.PathID) (*domai
 }
 
 func (s *MockPathService) UpdatePath(ctx context.Context, req UpdatePathRequest) (*domain.Path, error) {
-	return &domain.Path{ID: req.ID, Name: "更新的模拟路�?}, nil
+	return &domain.Path{ID: req.ID, Name: "更新的模拟路径"}, nil
 }
 
 func (s *MockPathService) DeletePath(ctx context.Context, id domain.PathID) error {
@@ -65,7 +65,7 @@ func (s *MockLayoutService) ApplyCircularLayout(nodes []domain.Node, radius, cen
 	return nodes
 }
 
-// MockDatabaseService 模拟数据库服�?
+// MockDatabaseService 模拟数据库服�?
 type MockDatabaseService struct{}
 
 func (s *MockDatabaseService) CreateDatabaseConnection(ctx context.Context, conn *domain.DatabaseConnection) error {

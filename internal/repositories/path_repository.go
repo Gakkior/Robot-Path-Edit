@@ -33,7 +33,7 @@ type PathRepository interface {
 	GetConnectedPaths(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error)
 }
 
-// PathFilter 路径查询过滤�?
+// PathFilter 路径查询过滤器
 type PathFilter struct {
 	IDs         []domain.PathID      `json:"ids,omitempty"`
 	Name        string               `json:"name,omitempty"`
@@ -80,7 +80,7 @@ func (r *pathRepository) GetByID(ctx context.Context, id domain.PathID) (*domain
 	err := r.db.GORMDB().WithContext(ctx).Where("id = ?", id).First(&path).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("路径不存�? %s", id)
+			return nil, fmt.Errorf("路径不存�? %s", id)
 		}
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (r *pathRepository) Update(ctx context.Context, path *domain.Path) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("路径不存�? %s", path.ID)
+		return fmt.Errorf("路径不存�? %s", path.ID)
 	}
 
 	return nil
@@ -113,7 +113,7 @@ func (r *pathRepository) Delete(ctx context.Context, id domain.PathID) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("路径不存�? %s", id)
+		return fmt.Errorf("路径不存�? %s", id)
 	}
 
 	return nil
@@ -188,7 +188,7 @@ func (r *pathRepository) Count(ctx context.Context, filter PathFilter) (int64, e
 	return count, err
 }
 
-// GetByNode 获取与指定节点相关的所有路�?
+// GetByNode 获取与指定节点相关的所有路�?
 func (r *pathRepository) GetByNode(ctx context.Context, nodeID domain.NodeID) ([]*domain.Path, error) {
 	var paths []*domain.Path
 
@@ -200,7 +200,7 @@ func (r *pathRepository) GetByNode(ctx context.Context, nodeID domain.NodeID) ([
 	return paths, err
 }
 
-// GetByNodes 获取连接两个节点的路�?
+// GetByNodes 获取连接两个节点的路�?
 func (r *pathRepository) GetByNodes(ctx context.Context, startNodeID, endNodeID domain.NodeID) ([]*domain.Path, error) {
 	var paths []*domain.Path
 
@@ -218,7 +218,7 @@ func (r *pathRepository) GetConnectedPaths(ctx context.Context, nodeID domain.No
 	return r.GetByNode(ctx, nodeID)
 }
 
-// applyPathFilter 应用路径过滤�?
+// applyPathFilter 应用路径过滤�?
 func (r *pathRepository) applyPathFilter(query *gorm.DB, filter PathFilter) *gorm.DB {
 	if len(filter.IDs) > 0 {
 		stringIDs := make([]string, len(filter.IDs))

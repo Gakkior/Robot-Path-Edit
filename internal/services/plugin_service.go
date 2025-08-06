@@ -39,7 +39,7 @@ type DataProcessorPlugin interface {
 	ProcessPaths(paths []domain.Path, config map[string]interface{}) ([]domain.Path, error)
 }
 
-// EventHandler 事件处理器类�?
+// EventHandler 事件处理器类型
 type EventHandler func(event Event) error
 
 // Event 事件结构
@@ -50,7 +50,7 @@ type Event struct {
 	Data      map[string]interface{} `json:"data"`
 }
 
-// PluginRegistry 插件注册�?
+// PluginRegistry 插件注册�?
 type PluginRegistry struct {
 	mu                    sync.RWMutex
 	layoutPlugins         map[string]LayoutPlugin
@@ -103,7 +103,7 @@ type PluginInfo struct {
 	Config      map[string]interface{} `json:"config,omitempty"`
 }
 
-// PluginStatus 插件状�?
+// PluginStatus 插件状�?
 type PluginStatus string
 
 const (
@@ -154,7 +154,7 @@ func (s *pluginService) LoadPlugin(ctx context.Context, pluginPath string) error
 		return fmt.Errorf("加载插件失败: %v", err)
 	}
 
-	// 查找插件入口�?
+	// 查找插件入口�?
 	symbol, err := p.Lookup("NewPlugin")
 	if err != nil {
 		return fmt.Errorf("未找到插件入口点 'NewPlugin': %v", err)
@@ -169,16 +169,16 @@ func (s *pluginService) LoadPlugin(ctx context.Context, pluginPath string) error
 	// 创建插件实例
 	pluginInstance := newPluginFunc()
 
-	// 初始化插�?
+	// 初始化插�?
 	if err := pluginInstance.Initialize(ctx, nil); err != nil {
-		return fmt.Errorf("插件初始化失�? %v", err)
+		return fmt.Errorf("插件初始化失�? %v", err)
 	}
 
 	// 根据插件类型注册
 	pluginName := pluginInstance.Name()
 	s.registry.loadedPlugins[pluginName] = pluginInstance
 
-	// 检查插件类型并注册到相应的注册�?
+	// 检查插件类型并注册到相应的注册�?
 	if layoutPlugin, ok := pluginInstance.(LayoutPlugin); ok {
 		s.registry.layoutPlugins[pluginName] = layoutPlugin
 	}
@@ -199,7 +199,7 @@ func (s *pluginService) UnloadPlugin(ctx context.Context, pluginName string) err
 
 	plugin, exists := s.registry.loadedPlugins[pluginName]
 	if !exists {
-		return fmt.Errorf("插件 %s 未加�?, pluginName)
+		return fmt.Errorf("插件 %s 未加载", pluginName)
 	}
 
 	// 关闭插件
@@ -207,7 +207,7 @@ func (s *pluginService) UnloadPlugin(ctx context.Context, pluginName string) err
 		return fmt.Errorf("插件关闭失败: %v", err)
 	}
 
-	// 从所有注册表中移�?
+	// 从所有注册表中移�?
 	delete(s.registry.loadedPlugins, pluginName)
 	delete(s.registry.layoutPlugins, pluginName)
 	delete(s.registry.pathGenerationPlugins, pluginName)
@@ -216,7 +216,7 @@ func (s *pluginService) UnloadPlugin(ctx context.Context, pluginName string) err
 	return nil
 }
 
-// ListPlugins 列出所有插�?
+// ListPlugins 列出所有插�?
 func (s *pluginService) ListPlugins() []PluginInfo {
 	s.registry.mu.RLock()
 	defer s.registry.mu.RUnlock()
@@ -229,14 +229,14 @@ func (s *pluginService) ListPlugins() []PluginInfo {
 			Version:     plugin.Version(),
 			Description: plugin.Description(),
 			Type:        pluginType,
-			Status:      PluginStatusActive, // 简化状态管�?
+			Status:      PluginStatusActive, // 简化状态管�?
 		})
 	}
 
 	return plugins
 }
 
-// GetPluginStatus 获取插件状�?
+// GetPluginStatus 获取插件状�?
 func (s *pluginService) GetPluginStatus(pluginName string) (PluginStatus, error) {
 	s.registry.mu.RLock()
 	defer s.registry.mu.RUnlock()
@@ -244,7 +244,7 @@ func (s *pluginService) GetPluginStatus(pluginName string) (PluginStatus, error)
 	if _, exists := s.registry.loadedPlugins[pluginName]; exists {
 		return PluginStatusActive, nil
 	}
-	return PluginStatusDisabled, fmt.Errorf("插件 %s 未找�?, pluginName)
+	return PluginStatusDisabled, fmt.Errorf("插件 %s 未找到", pluginName)
 }
 
 // RegisterLayoutPlugin 注册布局插件
@@ -273,7 +273,7 @@ func (s *pluginService) ApplyLayoutPlugin(ctx context.Context, pluginName string
 	s.registry.mu.RUnlock()
 
 	if !exists {
-		return nil, fmt.Errorf("布局插件 %s 未找�?, pluginName)
+		return nil, fmt.Errorf("布局插件 %s 未找到", pluginName)
 	}
 
 	return plugin.ApplyLayout(nodes, paths, config)
@@ -317,7 +317,7 @@ func (s *pluginService) GeneratePathsWithPlugin(ctx context.Context, pluginName 
 	s.registry.mu.RUnlock()
 
 	if !exists {
-		return nil, fmt.Errorf("路径生成插件 %s 未找�?, pluginName)
+		return nil, fmt.Errorf("路径生成插件 %s 未找到", pluginName)
 	}
 
 	return plugin.GeneratePaths(nodes, config)
@@ -361,7 +361,7 @@ func (s *pluginService) ProcessDataWithPlugin(ctx context.Context, pluginName st
 	s.registry.mu.RUnlock()
 
 	if !exists {
-		return nil, nil, fmt.Errorf("数据处理插件 %s 未找�?, pluginName)
+		return nil, nil, fmt.Errorf("数据处理插件 %s 未找到", pluginName)
 	}
 
 	processedNodes, err := plugin.ProcessNodes(nodes, config)
@@ -389,7 +389,7 @@ func (s *pluginService) ListDataProcessorPlugins() []string {
 	return plugins
 }
 
-// RegisterEventHandler 注册事件处理�?
+// RegisterEventHandler 注册事件处理�?
 func (s *pluginService) RegisterEventHandler(eventType string, handler EventHandler) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -398,7 +398,7 @@ func (s *pluginService) RegisterEventHandler(eventType string, handler EventHand
 	return nil
 }
 
-// UnregisterEventHandler 注销事件处理�?(简化实�?
+// UnregisterEventHandler 注销事件处理�?(简化实�?
 func (s *pluginService) UnregisterEventHandler(eventType string, handlerID string) error {
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
@@ -418,16 +418,16 @@ func (s *pluginService) EmitEvent(event Event) error {
 	}
 }
 
-// SubscribeToEvents 订阅事件 (简化实�?
+// SubscribeToEvents 订阅事件 (简化实�?
 func (s *pluginService) SubscribeToEvents(eventTypes []string) (<-chan Event, error) {
 	// 简化实现：返回主事件通道
-	// 在生产环境中，应该为每个订阅者创建专门的通道并过滤事件类�?
+	// 在生产环境中，应该为每个订阅者创建专门的通道并过滤事件类�?
 	return s.eventChannel, nil
 }
 
 // 私有方法
 
-// eventProcessor 事件处理�?
+// eventProcessor 事件处理�?
 func (s *pluginService) eventProcessor() {
 	for {
 		select {
@@ -479,7 +479,7 @@ func (s *pluginService) getPluginType(plugin Plugin) string {
 func (s *pluginService) Shutdown(ctx context.Context) error {
 	s.cancel()
 
-	// 关闭所有插�?
+	// 关闭所有插�?
 	s.registry.mu.Lock()
 	defer s.registry.mu.Unlock()
 

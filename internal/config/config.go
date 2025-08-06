@@ -1,14 +1,14 @@
 // Package config 提供应用程序配置管理
 //
 // 设计参考：
-// - Grafana的配置管理系�?
-// - Kubernetes的配置结�?
-// - Prometheus的配置验证机�?
+// - Grafana的配置管理系统
+// - Kubernetes的配置结构
+// - Prometheus的配置验证机制
 //
-// 特点�?
+// 特点：
 // 1. 分层配置：支持文件、环境变量、命令行参数
-// 2. 配置验证：启动时验证配置的正确�?
-// 3. 热重载：支持配置文件变更时自动重�?
+// 2. 配置验证：启动时验证配置的正确性
+// 3. 热重载：支持配置文件变更时自动重载
 package config
 
 import (
@@ -19,8 +19,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config 应用程序主配置结�?
-// 参考Grafana的配置结构设�?
+// Config 应用程序主配置结��?
+// 参考Grafana的配置结构设��?
 type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
@@ -29,7 +29,7 @@ type Config struct {
 	Metrics  MetricsConfig  `mapstructure:"metrics"`
 }
 
-// ServerConfig HTTP服务器配�?
+// ServerConfig HTTP服务器配��?
 type ServerConfig struct {
 	Addr         string        `mapstructure:"addr"`          // 监听地址
 	ReadTimeout  time.Duration `mapstructure:"read_timeout"`  // 读取超时
@@ -45,14 +45,14 @@ type TLSConfig struct {
 	KeyFile  string `mapstructure:"key_file"`
 }
 
-// DatabaseConfig 数据库配�?
+// DatabaseConfig 数据库配��?
 // 支持多种数据库类型的通用配置
 type DatabaseConfig struct {
-	Type            string        `mapstructure:"type"`              // 数据库类�? sqlite, mysql, postgres
-	DSN             string        `mapstructure:"dsn"`               // 数据源名�?
-	MaxOpenConns    int           `mapstructure:"max_open_conns"`    // 最大打开连接�?
+	Type            string        `mapstructure:"type"`              // 数据库类��? sqlite, mysql, postgres
+	DSN             string        `mapstructure:"dsn"`               // 数据源名��?
+	MaxOpenConns    int           `mapstructure:"max_open_conns"`    // 最大打开连接��?
 	MaxIdleConns    int           `mapstructure:"max_idle_conns"`    // 最大空闲连接数
-	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"` // 连接最大生命周�?
+	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"` // 连接最大生命周��?
 	AutoMigrate     bool          `mapstructure:"auto_migrate"`      // 是否自动迁移
 }
 
@@ -63,7 +63,7 @@ type LoggerConfig struct {
 	Format     string `mapstructure:"format"`      // 日志格式: json, text
 	Output     string `mapstructure:"output"`      // 输出目标: stdout, file
 	File       string `mapstructure:"file"`        // 日志文件路径
-	MaxSize    int    `mapstructure:"max_size"`    // 单个文件最大大�?MB)
+	MaxSize    int    `mapstructure:"max_size"`    // 单个文件最大大��?MB)
 	MaxBackups int    `mapstructure:"max_backups"` // 保留的备份文件数
 	MaxAge     int    `mapstructure:"max_age"`     // 保留天数
 	Compress   bool   `mapstructure:"compress"`    // 是否压缩备份文件
@@ -86,7 +86,7 @@ type MetricsConfig struct {
 }
 
 // Load 加载配置
-// 参考Viper的最佳实践和Grafana的配置加载流�?
+// 参考Viper的最佳实践和Grafana的配置加载流��?
 func Load() (*Config, error) {
 	// 设置配置文件搜索路径
 	viper.SetConfigName("config")
@@ -95,12 +95,12 @@ func Load() (*Config, error) {
 	viper.AddConfigPath("./configs")
 	viper.AddConfigPath("/etc/robot-path-editor")
 
-	// 设置环境变量前缀 - 参考Kubernetes的环境变量命�?
+	// 设置环境变量前缀 - 参考Kubernetes的环境变量命��?
 	viper.SetEnvPrefix("RPE")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
-	// 设置默认�?- 参考Grafana的默认配�?
+	// 设置默认��?- 参考Grafana的默认配��?
 	setDefaults()
 
 	// 读取配置文件
@@ -108,7 +108,7 @@ func Load() (*Config, error) {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("读取配置文件失败: %w", err)
 		}
-		// 配置文件不存在时继续，使用默认配�?
+		// 配置文件不存在时继续，使用默认配��?
 	}
 
 	// 解析配置到结构体
@@ -125,17 +125,17 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
-// setDefaults 设置默认配置�?
-// 参考各个优秀项目的默认配�?
+// setDefaults 设置默认配置��?
+// 参考各个优秀项目的默认配��?
 func setDefaults() {
-	// 服务器配置默认�?
+	// 服务器配置默认��?
 	viper.SetDefault("server.addr", ":8080")
 	viper.SetDefault("server.read_timeout", "30s")
 	viper.SetDefault("server.write_timeout", "30s")
 	viper.SetDefault("server.idle_timeout", "120s")
 	viper.SetDefault("server.tls.enabled", false)
 
-	// 数据库配置默认�?
+	// 数据库配置默认��?
 	viper.SetDefault("database.type", "sqlite")
 	viper.SetDefault("database.dsn", "./data/app.db")
 	viper.SetDefault("database.max_open_conns", 25)
@@ -143,7 +143,7 @@ func setDefaults() {
 	viper.SetDefault("database.conn_max_lifetime", "1h")
 	viper.SetDefault("database.auto_migrate", true)
 
-	// 日志配置默认�?
+	// 日志配置默认��?
 	viper.SetDefault("logger.level", "info")
 	viper.SetDefault("logger.format", "json")
 	viper.SetDefault("logger.output", "stdout")
@@ -152,7 +152,7 @@ func setDefaults() {
 	viper.SetDefault("logger.max_age", 7)
 	viper.SetDefault("logger.compress", true)
 
-	// 画布配置默认�?
+	// 画布配置默认��?
 	viper.SetDefault("canvas.default_width", 1920)
 	viper.SetDefault("canvas.default_height", 1080)
 	viper.SetDefault("canvas.grid_size", 20)
@@ -160,20 +160,20 @@ func setDefaults() {
 	viper.SetDefault("canvas.zoom_max", 5.0)
 	viper.SetDefault("canvas.node_radius", 20)
 
-	// 监控配置默认�?
+	// 监控配置默认��?
 	viper.SetDefault("metrics.enabled", true)
 	viper.SetDefault("metrics.path", "/metrics")
 }
 
-// Validate 验证配置的有效�?
-// 参考Kubernetes的配置验证机�?
+// Validate 验证配置的有效��?
+// 参考Kubernetes的配置验证机��?
 func (c *Config) Validate() error {
-	// 验证服务器配�?
+	// 验证服务器配��?
 	if c.Server.Addr == "" {
 		return fmt.Errorf("server.addr 不能为空")
 	}
 
-	// 验证数据库配�?
+	// 验证数据库配��?
 	if c.Database.Type == "" {
 		return fmt.Errorf("database.type 不能为空")
 	}
@@ -184,7 +184,7 @@ func (c *Config) Validate() error {
 		"postgres": true,
 	}
 	if !validDBTypes[c.Database.Type] {
-		return fmt.Errorf("不支持的数据库类�? %s", c.Database.Type)
+		return fmt.Errorf("不支持的数据库类��? %s", c.Database.Type)
 	}
 
 	if c.Database.DSN == "" {
@@ -201,12 +201,12 @@ func (c *Config) Validate() error {
 		"panic": true,
 	}
 	if !validLogLevels[c.Logger.Level] {
-		return fmt.Errorf("无效的日志级�? %s", c.Logger.Level)
+		return fmt.Errorf("无效的日志级��? %s", c.Logger.Level)
 	}
 
 	// 验证画布配置
 	if c.Canvas.ZoomMin <= 0 || c.Canvas.ZoomMax <= 0 || c.Canvas.ZoomMin >= c.Canvas.ZoomMax {
-		return fmt.Errorf("无效的缩放配�? min=%f, max=%f", c.Canvas.ZoomMin, c.Canvas.ZoomMax)
+		return fmt.Errorf("无效的缩放配��? min=%f, max=%f", c.Canvas.ZoomMin, c.Canvas.ZoomMax)
 	}
 
 	return nil

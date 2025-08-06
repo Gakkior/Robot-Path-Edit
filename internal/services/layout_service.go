@@ -73,11 +73,11 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 		adjacency[string(path.EndNodeID)] = append(adjacency[string(path.EndNodeID)], string(path.StartNodeID))
 	}
 
-	// 初始化参�?
+	// 初始化参数
 	width, height := 1000.0, 800.0
 	k := math.Sqrt((width * height) / float64(len(nodes))) // 理想距离
 
-	// 随机初始位置 (如果节点位置�?)
+	// 随机初始位置 (如果节点位置为空)
 	updatedNodes := make([]domain.Node, len(nodes))
 	for i, node := range nodes {
 		updatedNode := node
@@ -88,16 +88,16 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 		updatedNodes[i] = updatedNode
 	}
 
-	// 迭代计算�?
+	// 迭代计算�?
 	for iter := 0; iter < iterations; iter++ {
-		// 计算每个节点的受�?
+		// 计算每个节点的受�?
 		forces := make(map[string]struct{ fx, fy float64 })
 
 		for i := range updatedNodes {
 			forces[string(updatedNodes[i].ID)] = struct{ fx, fy float64 }{0, 0}
 		}
 
-		// 计算排斥�?(所有节点对之间)
+		// 计算排斥�?(所有节点对之间)
 		for i := 0; i < len(updatedNodes); i++ {
 			for j := i + 1; j < len(updatedNodes); j++ {
 				node1, node2 := &updatedNodes[i], &updatedNodes[j]
@@ -109,7 +109,7 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 					distance = 0.01 // 避免除零
 				}
 
-				// 库仑排斥�?
+				// 库仑排斥�?
 				repulsiveForce := k * k / distance
 				fx := repulsiveForce * dx / distance
 				fy := repulsiveForce * dy / distance
@@ -126,7 +126,7 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 			}
 		}
 
-		// 计算吸引�?(连接的节点之�?
+		// 计算吸引�?(连接的节点之�?
 		for _, path := range paths {
 			var node1, node2 *domain.Node
 			for i := range updatedNodes {
@@ -167,7 +167,7 @@ func (s *layoutService) ApplyForceDirectedLayout(nodes []domain.Node, paths []do
 		for i := range updatedNodes {
 			force := forces[string(updatedNodes[i].ID)]
 
-			// 限制最大移动距�?
+			// 限制最大移动距�?
 			displacement := math.Min(math.Sqrt(force.fx*force.fx+force.fy*force.fy), temperature)
 			if displacement > 0.01 {
 				updatedNodes[i].Position.X += force.fx / displacement * temperature

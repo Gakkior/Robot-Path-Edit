@@ -1,12 +1,12 @@
-// Package logger 提供统一的日志管理功�?
+// Package logger 提供统一的日志管理功能
 //
 // 设计参考：
 // - Kubernetes的结构化日志系统
-// - Grafana的日志管�?
-// - Prometheus的日志规�?
+// - Grafana的日志管理
+// - Prometheus的日志规范
 //
-// 特点�?
-// 1. 结构化日志：支持JSON和文本格�?
+// 特点：
+// 1. 结构化日志：支持JSON和文本格式
 // 2. 日志轮转：支持文件大小和时间轮转
 // 3. 上下文感知：支持链路追踪
 package logger
@@ -21,13 +21,13 @@ import (
 	"robot-path-editor/internal/config"
 )
 
-// Init 初始化日志系�?
+// Init 初始化日志系统
 // 参考Kubernetes的日志初始化流程
 func Init(cfg config.LoggerConfig) {
 	// 设置日志级别
 	level, err := logrus.ParseLevel(cfg.Level)
 	if err != nil {
-		logrus.WithError(err).Warn("解析日志级别失败，使用默认级�?info")
+		logrus.WithError(err).Warn("解析日志级别失败，使用默认级别info")
 		level = logrus.InfoLevel
 	}
 	logrus.SetLevel(level)
@@ -35,7 +35,7 @@ func Init(cfg config.LoggerConfig) {
 	// 设置日志格式
 	switch strings.ToLower(cfg.Format) {
 	case "json":
-		// JSON格式 - 适合生产环境和日志收集系�?
+		// JSON格式 - 适合生产环境和日志收集系统
 		logrus.SetFormatter(&logrus.JSONFormatter{
 			TimestampFormat: "2006-01-02T15:04:05.000Z07:00",
 			FieldMap: logrus.FieldMap{
@@ -46,7 +46,7 @@ func Init(cfg config.LoggerConfig) {
 			},
 		})
 	default:
-		// 文本格式 - 适合开发环�?
+		// 文本格式 - 适合开发环境
 		logrus.SetFormatter(&logrus.TextFormatter{
 			FullTimestamp:   true,
 			TimestampFormat: "2006-01-02 15:04:05",
@@ -58,7 +58,7 @@ func Init(cfg config.LoggerConfig) {
 	switch strings.ToLower(cfg.Output) {
 	case "file":
 		if cfg.File == "" {
-			logrus.Warn("日志文件路径为空，使用默认路�?)
+			logrus.Warn("日志文件路径为空，使用默认路径")
 			cfg.File = "./logs/app.log"
 		}
 
@@ -78,16 +78,16 @@ func Init(cfg config.LoggerConfig) {
 
 		logrus.SetOutput(file)
 	default:
-		// 默认输出到标准输�?
+		// 默认输出到标准输出
 		logrus.SetOutput(os.Stdout)
 	}
 
-	// 设置调用者信息报�?
+	// 设置调用者信息报告
 	logrus.SetReportCaller(true)
 
 	logrus.WithFields(logrus.Fields{
 		"level":  cfg.Level,
 		"format": cfg.Format,
 		"output": cfg.Output,
-	}).Info("日志系统初始化完�?)
+	}).Info("日志系统初始化完成")
 }

@@ -1,4 +1,4 @@
-// Package repositories 数据库连接仓储实�?
+// Package repositories 数据库连接仓储实现
 package repositories
 
 import (
@@ -8,7 +8,7 @@ import (
 	"robot-path-editor/internal/domain"
 )
 
-// DatabaseConnectionRepository 数据库连接仓储接�?
+// DatabaseConnectionRepository 数据库连接仓储接�?
 type DatabaseConnectionRepository interface {
 	Create(ctx context.Context, conn *domain.DatabaseConnection) error
 	GetByID(ctx context.Context, id string) (*domain.DatabaseConnection, error)

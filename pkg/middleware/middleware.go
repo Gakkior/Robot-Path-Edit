@@ -1,4 +1,4 @@
-// Package middleware 提供HTTP中间�?
+// Package middleware 提供HTTP中间件
 package middleware
 
 import (
@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Logger 日志中间�?
+// Logger 日志中间件
 func Logger() gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		logrus.WithFields(logrus.Fields{
@@ -21,7 +21,7 @@ func Logger() gin.HandlerFunc {
 	})
 }
 
-// Recovery 恢复中间�?
+// Recovery 恢复中间件
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		logrus.WithField("panic", recovered).Error("HTTP请求恐慌")
@@ -29,7 +29,7 @@ func Recovery() gin.HandlerFunc {
 	})
 }
 
-// CORS 跨域中间�?
+// CORS 跨域中间件
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")

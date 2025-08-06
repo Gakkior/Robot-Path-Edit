@@ -1,11 +1,11 @@
-// Package app 是应用程序的主要组装�?
+// Package app 是应用程序的主要组装器
 //
 // 设计参考：
-// - Uber FX的依赖注入模�?
-// - Kubernetes Controller Manager的组件协�?
-// - Grafana的应用程序架�?
+// - Uber FX的依赖注入模式
+// - Kubernetes Controller Manager的组件协调
+// - Grafana的应用程序架构
 //
-// 职责�?
+// 职责：
 // 1. 组件初始化和依赖注入
 // 2. 应用程序生命周期管理
 // 3. 各个服务层的协调
@@ -29,14 +29,14 @@ import (
 	"robot-path-editor/web"
 )
 
-// Application 应用程序主结�?
+// Application 应用程序主结�?
 // 采用依赖注入模式，管理所有组件的生命周期
 type Application struct {
 	config *config.Config
 	server *http.Server
 	db     database.Database
 
-	// 服务�?- 核心业务逻辑
+	// 服务�?- 核心业务逻辑
 	nodeService   services.NodeService
 	pathService   services.PathService
 	layoutService services.LayoutService
@@ -63,18 +63,18 @@ func New(cfg *config.Config) (*Application, error) {
 	// 尝试初始化数据库
 	database, err := database.New(cfg.Database)
 	if err != nil {
-		// 如果数据库初始化失败，使用内存仓储作为后�?
-		log.WithError(err).Warn("数据库初始化失败，使用内存存�?)
+		// 如果数据库初始化失败，使用内存仓储作为后备
+		log.WithError(err).Warn("数据库初始化失败，使用内存存储")
 
 		// 使用内存仓储
 		nodeRepo = repositories.NewMemoryNodeRepository()
-		// 暂时使用nil，稍后实现其他内存仓�?
+		// 暂时使用nil，稍后实现其他内存仓储
 		pathRepo = nil
 		dbConnRepo = nil
 		tableMappingRepo = nil
 		db = nil
 	} else {
-		// 使用数据库仓�?
+		// 使用数据库仓�?
 		db = database
 		nodeRepo = repositories.NewNodeRepository(db)
 		pathRepo = repositories.NewPathRepository(db)
@@ -95,13 +95,13 @@ func New(cfg *config.Config) (*Application, error) {
 		layoutService = services.NewLayoutService(nodeService, pathService)
 		dbService = services.NewDatabaseService(dbConnRepo, tableMappingRepo)
 	} else {
-		// 内存模式下的简化服�?
+		// 内存模式下的简化服�?
 		pathService = &services.MockPathService{}
 		layoutService = &services.MockLayoutService{}
 		dbService = &services.MockDatabaseService{}
 	}
 
-	// 4. 初始化处理器�?- API接口
+	// 4. 初始化处理器�?- API接口
 	handlers := handlers.New(
 		nodeService,
 		pathService,
@@ -109,7 +109,7 @@ func New(cfg *config.Config) (*Application, error) {
 		dbService,
 	)
 
-	// 5. 创建HTTP服务�?
+	// 5. 创建HTTP服务�?
 	server := &http.Server{
 		Addr:         cfg.Server.Addr,
 		ReadTimeout:  cfg.Server.ReadTimeout,
@@ -134,50 +134,50 @@ func New(cfg *config.Config) (*Application, error) {
 		return nil, fmt.Errorf("配置路由失败: %w", err)
 	}
 
-	log.Info("应用程序初始化完�?)
+	log.Info("应用程序初始化完成")
 	return app, nil
 }
 
 // Start 启动应用程序
-// 参考Kubernetes Controller的启动模�?
+// 参考Kubernetes Controller的启动模式
 func (a *Application) Start(ctx context.Context) error {
 	a.log.Info("启动应用程序...")
 
 	// 启动后台服务
 	go func() {
 		if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.log.WithError(err).Error("HTTP服务器启动失�?)
+			a.log.WithError(err).Error("HTTP服务器启动失败")
 		}
 	}()
 
-	// 等待上下文取�?
+	// 等待上下文取消
 	<-ctx.Done()
 	return nil
 }
 
 // Stop 停止应用程序
-// 实现优雅关闭，参考Kubernetes的优雅终�?
+// 实现优雅关闭，参考Kubernetes的优雅终止
 func (a *Application) Stop(ctx context.Context) error {
 	a.log.Info("停止应用程序...")
 
-	// 1. 停止HTTP服务�?
+	// 1. 停止HTTP服务器
 	if err := a.server.Shutdown(ctx); err != nil {
-		a.log.WithError(err).Error("HTTP服务器关闭失�?)
+		a.log.WithError(err).Error("HTTP服务器关闭失败")
 		return err
 	}
 
-	// 2. 关闭数据库连�?
+	// 2. 关闭数据库连接
 	if err := a.db.Close(); err != nil {
-		a.log.WithError(err).Error("数据库关闭失�?)
+		a.log.WithError(err).Error("数据库关闭失败")
 		return err
 	}
 
-	a.log.Info("应用程序已停�?)
+	a.log.Info("应用程序已停止")
 	return nil
 }
 
 // setupRoutes 配置HTTP路由
-// 参考Kubernetes API Server的路由设�?
+// 参考Kubernetes API Server的路由设计
 func (a *Application) setupRoutes() error {
 	// 根据环境设置Gin模式
 	if a.config.Logger.Level == "debug" {
@@ -188,21 +188,21 @@ func (a *Application) setupRoutes() error {
 
 	router := gin.New()
 
-	// 基础中间�?- 参考Kubernetes API Server的中间件�?
+	// 基础中间�?- 参考Kubernetes API Server的中间件�?
 	router.Use(middleware.Logger())
 	router.Use(middleware.Recovery())
 	router.Use(middleware.CORS())
 
-	// 健康检查端�?- 参考Kubernetes的健康检�?
+	// 健康检查端�?- 参考Kubernetes的健康检�?
 	router.GET("/health", a.handlers.HealthCheck)
 	router.GET("/ready", a.handlers.ReadinessCheck)
 
-	// 指标端点 - 参考Prometheus的指标暴�?
+	// 指标端点 - 参考Prometheus的指标暴�?
 	if a.config.Metrics.Enabled {
 		router.GET(a.config.Metrics.Path, gin.WrapH(promhttp.Handler()))
 	}
 
-	// API路由�?- RESTful API设计
+	// API路由�?- RESTful API设计
 	api := router.Group("/api/v1")
 	{
 		// 节点管理API
@@ -267,7 +267,7 @@ func (a *Application) setupRoutes() error {
 		ws.GET("/canvas", a.handlers.CanvasWebSocket)
 	}
 
-	// 静态文件服�?- 前端资源
+	// 静态文件服�?- 前端资源
 	router.StaticFS("/static", http.FS(web.StaticFiles))
 	router.GET("/", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", web.IndexHTML)
