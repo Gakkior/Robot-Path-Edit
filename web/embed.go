@@ -1,4 +1,4 @@
-// Package web 提供内嵌的前端资�?
+// Package web 提供内嵌的前端资源
 package web
 
 import (
@@ -118,15 +118,15 @@ var IndexHTML = []byte(`<!DOCTYPE html>
         <h1>机器人路径编辑器</h1>
         <p class="subtitle">现代化的三端兼容路径管理工具</p>
         
-        <div class="status">�?服务运行�?/div>
+        <div class="status">✅ 服务运行中</div>
         
         <div class="features">
             <div class="feature">
-                <h3>📊 可视化编�?/h3>
+                <h3>📊 可视化编辑</h3>
                 <p>拖拽式画布编辑，直观的节点和路径管理</p>
             </div>
             <div class="feature">
-                <h3>🗄�?数据库支�?/h3>
+                <h3>🗄️ 数据库支持</h3>
                 <p>支持SQLite、MySQL等多种数据库</p>
             </div>
             <div class="feature">
@@ -144,7 +144,7 @@ var IndexHTML = []byte(`<!DOCTYPE html>
             <p>RESTful API 服务已启动，可访问以下端点：</p>
             <div><code class="api-endpoint">GET /api/v1/nodes</code> - 获取节点列表</div>
             <div><code class="api-endpoint">GET /api/v1/paths</code> - 获取路径列表</div>
-            <div><code class="api-endpoint">GET /health</code> - 健康检�?/div>
+            <div><code class="api-endpoint">GET /health</code> - 健康检查</div>
             <div><code class="api-endpoint">GET /metrics</code> - 系统指标</div>
         </div>
     </div>
@@ -160,28 +160,28 @@ var IndexHTML = []byte(`<!DOCTYPE html>
                 console.error('Error:', error);
             });
             
-        // 实时状态更�?
+        // 实时状态更新
         setInterval(() => {
             fetch('/health')
                 .then(response => {
                     if (response.ok) {
-                        document.querySelector('.status').textContent = '�?服务运行�?;
+                        document.querySelector('.status').textContent = '✅ 服务运行中';
                         document.querySelector('.status').style.background = '#2ecc71';
                     } else {
-                        document.querySelector('.status').textContent = '�?服务异常';
+                        document.querySelector('.status').textContent = '❌ 服务异常';
                         document.querySelector('.status').style.background = '#e74c3c';
                     }
                 })
                 .catch(() => {
-                    document.querySelector('.status').textContent = '�?连接失败';
+                    document.querySelector('.status').textContent = '❌ 连接失败';
                     document.querySelector('.status').style.background = '#e74c3c';
                 });
-        }, 10000); // �?0秒检查一�?
+        }, 10000); // 10秒检查一次
     </script>
 </body>
 </html>`)
 
-// ServeStatic 提供静态文件服�?
+// ServeStatic 提供静态文件服务
 func ServeStatic() http.FileSystem {
 	return http.FS(StaticFiles)
 }
