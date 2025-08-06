@@ -65,10 +65,28 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### 🔄 双前端架构
+
+| 前端版本 | 技术栈 | 访问路径 | 状态 |
+|---------|--------|----------|------|
+| **经典版** | HTML + JS + Konva.js | `/app` | 🟢 可用 |
+| **现代版** | React + TS + Vite | `/app/new` | 🟢 可用 |
+
 ### 技术栈
 - **后端**: Go 1.21+, Gin, GORM, SQLite/MySQL/PostgreSQL
-- **前端**: Konva.js, 原生JavaScript, 现代CSS + HTML5
+- **前端经典版**: Konva.js, 原生JavaScript, 现代CSS + HTML5
+- **前端现代版**: React + TypeScript, Vite, TailwindCSS, Konva.js, Zustand, React Query
 - **架构**: 领域驱动设计 (DDD), 仓储模式, 命令模式
+
+### ✨ 现代前端特性
+- **React + TypeScript**: 类型安全的组件化开发
+- **Vite**: 极速构建和热重载
+- **TailwindCSS**: 现代化的原子级CSS框架
+- **Konva.js + React-Konva**: 高性能画布渲染
+- **Zustand**: 轻量级状态管理
+- **React Query**: 智能数据获取和缓存
+- **Framer Motion**: 流畅的动画效果
+- **Radix UI**: 无障碍的组件库
 
 ## 🚀 快速开始
 
@@ -85,6 +103,29 @@ go run cmd/demo/main.go
 ```
 
 访问 **http://localhost:8080** 开始体验！
+
+### 现代前端开发
+快速启动React版本进行开发：
+
+```bash
+# 启动现代前端开发服务器
+cd frontend
+npm install
+npm run dev
+
+# 启动后端服务器 (另一个终端)
+cd ..
+go run cmd/server/main.go
+```
+
+**开发环境访问地址：**
+- **现代前端**: http://localhost:5173 (Vite开发服务器)
+- **后端API**: http://localhost:8080/api/v1
+- **经典前端**: http://localhost:8080/app
+
+**生产环境访问地址：**
+- **现代前端**: http://localhost:8080/app/new
+- **经典前端**: http://localhost:8080/app
 
 ### 完整版部署
 
@@ -160,18 +201,40 @@ docker-compose up -d
 ### 高级配置
 
 #### 数据库配置
+
+**默认配置（推荐）：**
 ```yaml
 # configs/config.yaml
 database:
-  type: "mysql"  # sqlite, mysql, postgresql
+  type: "memory"    # 内存模式，无需CGO，适合开发和演示
+  dsn: ":memory:"
+```
+
+**其他数据库选项：**
+```yaml
+# SQLite（需要CGO支持）
+database:
+  type: "sqlite"
+  dsn: "./data/robot_paths.db"
+
+# MySQL
+database:
+  type: "mysql"
   dsn: "user:password@tcp(localhost:3306)/robot_paths"
-  
-  # 自定义表映射
-  table_mapping:
-    node_table: "robot_points"
-    node_id_field: "point_id"
-    path_table: "robot_routes" 
-    path_id_field: "route_id"
+
+# PostgreSQL
+database:
+  type: "postgresql"
+  dsn: "host=localhost user=postgres password=password dbname=robot_paths port=5432"
+```
+
+**启用CGO编译SQLite：**
+```bash
+# Windows
+set CGO_ENABLED=1 && go build cmd/server/main.go
+
+# Linux/macOS
+CGO_ENABLED=1 go build cmd/server/main.go
 ```
 
 ## 📊 API 参考
@@ -287,11 +350,55 @@ robot-path-editor/
 │  ├── repositories/      # 数据仓储
 │  ├── handlers/          # HTTP处理器
 │  └── database/          # 数据库适配
+├── frontend/              # 现代前端 (React)
+│  ├── src/
+│  │   ├── components/    # 组件库
+│  │   │   ├── Canvas/   # 画布组件
+│  │   │   ├── Sidebar/  # 侧边栏组件
+│  │   │   ├── Toolbar/  # 工具栏组件
+│  │   │   └── ui/       # 基础UI组件
+│  │   ├── services/     # API服务
+│  │   ├── stores/       # 状态管理
+│  │   ├── types/        # TypeScript类型
+│  │   └── utils/        # 工具函数
+│  ├── package.json      # 依赖配置
+│  ├── vite.config.ts    # Vite配置
+│  ├── tailwind.config.js # TailwindCSS配置
+│  └── tsconfig.json     # TypeScript配置
 ├── pkg/                   # 公共包
-├── web/static/           # 前端资源
+├── web/static/           # 经典前端资源
 ├── tests/                # 测试文件
 ├── scripts/              # 构建脚本
 └── configs/              # 配置文件
+```
+
+### 前端开发指南
+
+#### 环境变量配置
+创建 `frontend/.env` 文件：
+```env
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+VITE_APP_TITLE=机器人路径编辑器
+VITE_ENABLE_DEBUG=true
+```
+
+#### 开发建议
+1. **API优先**: 后端API完善后再开发前端功能
+2. **类型安全**: 充分利用TypeScript的类型检查
+3. **组件复用**: 抽取通用组件提高代码复用
+4. **性能优化**: 使用React.memo和useMemo优化渲染
+5. **测试驱动**: 编写单元测试确保代码质量
+
+#### 构建部署
+```bash
+# 构建现代前端
+cd frontend && npm run build
+
+# 复制到后端服务目录 (Windows)
+.\scripts\build-frontend.bat
+
+# 复制到后端服务目录 (Linux/Mac)
+./scripts/build-frontend.sh
 ```
 
 ### 代码规范
@@ -354,6 +461,25 @@ F12 -> Console -> 查看错误信息
 ## 🎯 功能特色
 
 ### 🌟 已实现功能
+
+#### 🎨 双前端架构优势
+| 功能 | 经典前端 | 现代前端 | 说明 |
+|------|---------|----------|------|
+| 节点管理 | ✅ | ✅ | 创建、编辑、删除节点 |
+| 路径管理 | ✅ | ✅ | 创建、编辑、删除路径 |
+| 画布交互 | ✅ | ✅ | 拖拽、缩放、平移 |
+| 属性面板 | ✅ | ✅ | 实时编辑节点/路径属性 |
+| 数据同步 | ✅ | ✅ | 外部数据库同步 |
+| 模板功能 | ✅ | ✅ | 保存和应用布局模板 |
+| 数据导出 | ✅ | ✅ | CSV/Excel导出 |
+| 撤销重做 | ✅ | ✅ | 操作历史管理 |
+| 布局算法 | ✅ | ✅ | 多种自动排列方式 |
+| 响应式设计 | ❌ | ✅ | 现代前端独有 |
+| TypeScript | ❌ | ✅ | 类型安全开发 |
+| 组件化 | ❌ | ✅ | 模块化架构 |
+| 现代动画 | ❌ | ✅ | Framer Motion |
+
+#### ✅ 核心功能
 - ✅ **基础画布编辑**: Konva.js实现，支持拖拽、连接
 - ✅ **表格编辑**: 双视图切换，实时同步
 - ✅ **撤销重做**: 命令模式，完整操作历史

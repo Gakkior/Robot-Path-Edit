@@ -7,7 +7,8 @@
 
 import React, { useState, useEffect } from 'react' // Import useState and useEffect
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAppStore, useDataActions } from '@/stores/useAppStore' // Import useDataActions
+import { useAppStore, useDataActions } from '@/stores/useAppStore'
+import { useDeleteNode, useDeletePath } from '@/services'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
@@ -111,7 +112,9 @@ export const PropertyPanel: React.FC = () => {
 
 // 节点属性面板
 const NodePropertyPanel: React.FC<{ node: Node }> = ({ node }) => {
+  const { deleteNode, setSelectedNodeId } = useAppStore()
   const { setNode, setDirty } = useDataActions()
+  const deleteNodeMutation = useDeleteNode()
 
   // Local state for editable fields
   const [name, setName] = useState(node.name)
@@ -149,8 +152,11 @@ const NodePropertyPanel: React.FC<{ node: Node }> = ({ node }) => {
   }
 
   const handleDelete = () => {
-    // TODO: Implement actual delete logic
-    console.log(`Delete node: ${node.id}`)
+    if (window.confirm('确定要删除这个节点吗？')) {
+      deleteNode(node.id)
+      deleteNodeMutation.mutate(node.id)
+      setSelectedNodeId(null)
+    }
   }
 
   return (
@@ -283,8 +289,9 @@ const NodePropertyPanel: React.FC<{ node: Node }> = ({ node }) => {
 
 // 路径属性面板
 const PathPropertyPanel: React.FC<{ path: Path }> = ({ path }) => {
-  const { nodes } = useAppStore()
+  const { nodes, deletePath, setSelectedPathId } = useAppStore()
   const { setPath, setDirty } = useDataActions()
+  const deletePathMutation = useDeletePath()
 
   // Local state for editable fields
   const [name, setName] = useState(path.name)
@@ -314,8 +321,11 @@ const PathPropertyPanel: React.FC<{ path: Path }> = ({ path }) => {
   }
 
   const handleDelete = () => {
-    // TODO: Implement actual delete logic
-    console.log(`Delete path: ${path.id}`)
+    if (window.confirm('确定要删除这条路径吗？')) {
+      deletePath(path.id)
+      deletePathMutation.mutate(path.id)
+      setSelectedPathId(null)
+    }
   }
   
   const startNode = nodes.find(n => n.id === path.start_node_id)

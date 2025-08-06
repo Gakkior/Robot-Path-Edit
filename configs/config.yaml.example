@@ -9,11 +9,15 @@ server:
 
 # 数据库配置
 database:
-  # 数据库类型: sqlite, mysql, postgresql, memory
-  type: "sqlite"
+  # 数据库类型: memory, sqlite, mysql, postgresql
+  type: "memory"
   
-  # SQLite 配置 (推荐开发使用)
-  dsn: "data/robot_paths.db"
+  # 内存模式 (推荐开发和演示使用，无需CGO)
+  dsn: ":memory:"
+  
+  # SQLite 配置 (需要CGO支持)
+  # type: "sqlite"
+  # dsn: "data/robot_paths.db"
   
   # MySQL 配置示例
   # type: "mysql"
@@ -22,9 +26,6 @@ database:
   # PostgreSQL 配置示例  
   # type: "postgresql"
   # dsn: "host=localhost user=postgres password=password dbname=robot_paths port=5432 sslmode=disable"
-  
-  # 内存模式 (演示用)
-  # type: "memory"
 
   # 连接池配置
   max_open_conns: 100      # 最大打开连接数

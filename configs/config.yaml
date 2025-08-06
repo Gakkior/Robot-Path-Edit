@@ -14,7 +14,7 @@ server:
 
 # 数据库配置
 database:
-  type: "sqlite"                    # 数据库类型：sqlite, mysql, postgres
+  type: "sqlite"                    # 数据库类型：memory, sqlite, mysql, postgres
   dsn: "./data/robot-path-editor.db" # 数据源名称
   max_open_conns: 25               # 最大打开连接数
   max_idle_conns: 5                # 最大空闲连接数
