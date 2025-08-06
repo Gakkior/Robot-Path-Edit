@@ -103,14 +103,15 @@ go mod download
 
 # 构建项目
 ./scripts/build.sh build-all  # Linux/macOS
-build.bat build-all           # Windows
+.\build.bat build-all         # Windows
 
 # 配置数据库
 cp configs/config.yaml.example configs/config.yaml
 # 编辑 config.yaml 配置数据库连接
 
 # 启动服务
-./build/robot-path-editor
+./build/robot-path-editor     # Linux/macOS
+.\build\robot-path-editor.exe # Windows
 ```
 
 #### 3. Docker 部署 (推荐)
@@ -235,11 +236,20 @@ go install github.com/swaggo/swag/cmd/swag@latest
 # 运行开发服务器
 go run cmd/server/main.go
 
+# 运行演示版本
+go run cmd/demo/main.go
+
 # 运行测试
 go test ./... -v -cover
 
 # 代码检查
 golangci-lint run
+
+# 构建项目
+.\build.bat build              # Windows (当前平台)
+.\build.bat build-all          # Windows (所有平台)
+./scripts/build.sh build       # Linux/macOS (当前平台)
+./scripts/build.sh build-all   # Linux/macOS (所有平台)
 ```
 
 ### 项目结构
