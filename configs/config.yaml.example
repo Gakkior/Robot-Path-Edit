@@ -9,15 +9,11 @@ server:
 
 # 数据库配置
 database:
-  # 数据库类型: memory, sqlite, mysql, postgresql
-  type: "memory"
-  
-  # 内存模式 (推荐开发和演示使用，无需CGO)
-  dsn: ":memory:"
+  # 数据库类型: sqlite, mysql
+  type: "sqlite"
   
   # SQLite 配置 (需要CGO支持)
-  # type: "sqlite"
-  # dsn: "data/robot_paths.db"
+  dsn: "data/robot_paths.db"
   
   # MySQL 配置示例
   # type: "mysql"

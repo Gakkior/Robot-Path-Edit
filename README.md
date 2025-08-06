@@ -206,26 +206,16 @@ docker-compose up -d
 ```yaml
 # configs/config.yaml
 database:
-  type: "memory"    # 内存模式，无需CGO，适合开发和演示
-  dsn: ":memory:"
+  type: "sqlite"    # SQLite数据库，需要CGO支持
+  dsn: "./data/robot-path-editor.db"
 ```
 
-**其他数据库选项：**
+**MySQL配置选项：**
 ```yaml
-# SQLite（需要CGO支持）
-database:
-  type: "sqlite"
-  dsn: "./data/robot_paths.db"
-
 # MySQL
 database:
   type: "mysql"
   dsn: "user:password@tcp(localhost:3306)/robot_paths"
-
-# PostgreSQL
-database:
-  type: "postgresql"
-  dsn: "host=localhost user=postgres password=password dbname=robot_paths port=5432"
 ```
 
 **启用CGO编译SQLite：**
