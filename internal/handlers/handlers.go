@@ -27,6 +27,8 @@ type Handlers struct {
 	pathService     services.PathService
 	layoutService   services.LayoutService
 	databaseService services.DatabaseService
+	dataSyncService services.DataSyncService
+	templateService services.TemplateService
 }
 
 // New 创建新的处理器实例
@@ -35,12 +37,16 @@ func New(
 	pathService services.PathService,
 	layoutService services.LayoutService,
 	databaseService services.DatabaseService,
+	dataSyncService services.DataSyncService,
+	templateService services.TemplateService,
 ) *Handlers {
 	return &Handlers{
 		nodeService:     nodeService,
 		pathService:     pathService,
 		layoutService:   layoutService,
 		databaseService: databaseService,
+		dataSyncService: dataSyncService,
+		templateService: templateService,
 	}
 }
 
@@ -316,19 +322,56 @@ func (h *Handlers) ListDatabaseConnections(c *gin.Context) {
 }
 
 func (h *Handlers) CreateDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "创建数据库连接"})
+	var req services.CreateConnectionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	conn, err := h.databaseService.CreateConnection(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"connection": conn})
 }
 
 func (h *Handlers) UpdateDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "更新数据库连接"})
+	var req services.UpdateConnectionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	req.ID = c.Param("id")
+	conn, err := h.databaseService.UpdateConnection(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"connection": conn})
 }
 
 func (h *Handlers) DeleteDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "删除数据库连接"})
+	id := c.Param("id")
+	err := h.databaseService.DeleteConnection(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "数据库连接删除成功"})
 }
 
 func (h *Handlers) TestDatabaseConnection(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "测试数据库连接"})
+	id := c.Param("id")
+	err := h.databaseService.TestConnection(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "数据库连接测试成功"})
 }
 
 func (h *Handlers) ListTableMappings(c *gin.Context) {
@@ -341,15 +384,46 @@ func (h *Handlers) ListTableMappings(c *gin.Context) {
 }
 
 func (h *Handlers) CreateTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "创建表映射"})
+	var req services.CreateTableMappingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	mapping, err := h.databaseService.CreateTableMapping(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"mapping": mapping})
 }
 
 func (h *Handlers) UpdateTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "更新表映射"})
+	var req services.UpdateTableMappingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	req.ID = c.Param("id")
+	mapping, err := h.databaseService.UpdateTableMapping(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"mapping": mapping})
 }
 
 func (h *Handlers) DeleteTableMapping(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "删除表映射"})
+	id := c.Param("id")
+	err := h.databaseService.DeleteTableMapping(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "表映射删除成功"})
 }
 
 // 分析相关处理器
@@ -368,4 +442,52 @@ func (h *Handlers) DetectCycles(c *gin.Context) {
 // WebSocket处理器
 func (h *Handlers) CanvasWebSocket(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "画布WebSocket"})
+}
+
+// 数据同步相关处理器
+func (h *Handlers) SyncNodesFromExternal(c *gin.Context) {
+	mappingID := c.Param("mappingId")
+	result, err := h.dataSyncService.SyncNodesFromExternal(c.Request.Context(), mappingID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"result": result})
+}
+
+func (h *Handlers) SyncPathsFromExternal(c *gin.Context) {
+	mappingID := c.Param("mappingId")
+	result, err := h.dataSyncService.SyncPathsFromExternal(c.Request.Context(), mappingID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"result": result})
+}
+
+func (h *Handlers) SyncAllDataFromExternal(c *gin.Context) {
+	mappingID := c.Param("mappingId")
+	result, err := h.dataSyncService.SyncAllDataFromExternal(c.Request.Context(), mappingID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"result": result})
+}
+
+func (h *Handlers) ValidateExternalTable(c *gin.Context) {
+	connectionID := c.Query("connection_id")
+	tableName := c.Query("table_name")
+
+	if connectionID == "" || tableName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "需要提供connection_id和table_name参数"})
+		return
+	}
+
+	result, err := h.dataSyncService.ValidateExternalTable(c.Request.Context(), connectionID, tableName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"result": result})
 }

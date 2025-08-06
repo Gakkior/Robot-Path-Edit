@@ -1,0 +1,84 @@
+# 机器人路径编辑器配置文件示例
+# 复制为 config.yaml 并根据实际情况修改配置
+
+# 服务器配置
+server:
+  host: "localhost"         # 监听地址
+  port: 8080               # 监听端口
+  mode: "release"          # 运行模式: debug, release, test
+
+# 数据库配置
+database:
+  # 数据库类型: sqlite, mysql, postgresql, memory
+  type: "sqlite"
+  
+  # SQLite 配置 (推荐开发使用)
+  dsn: "data/robot_paths.db"
+  
+  # MySQL 配置示例
+  # type: "mysql"
+  # dsn: "user:password@tcp(localhost:3306)/robot_paths?charset=utf8mb4&parseTime=True&loc=Local"
+  
+  # PostgreSQL 配置示例  
+  # type: "postgresql"
+  # dsn: "host=localhost user=postgres password=password dbname=robot_paths port=5432 sslmode=disable"
+  
+  # 内存模式 (演示用)
+  # type: "memory"
+
+  # 连接池配置
+  max_open_conns: 100      # 最大打开连接数
+  max_idle_conns: 10       # 最大空闲连接数
+  conn_max_lifetime: 3600  # 连接最大生存时间(秒)
+
+# 日志配置
+logging:
+  level: "info"            # 日志级别: debug, info, warn, error
+  format: "json"           # 日志格式: json, text
+  output: "stdout"         # 输出目标: stdout, stderr, file
+  file: "logs/app.log"     # 日志文件路径(当output为file时)
+
+# CORS配置
+cors:
+  allow_origins: ["*"]     # 允许的源
+  allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allow_headers: ["*"]
+  allow_credentials: true
+
+# 静态文件配置
+static:
+  enable: true             # 是否启用静态文件服务
+  path: "/static"          # 静态文件URL路径
+  root: "./web/static"     # 静态文件根目录
+
+# 功能开关
+features:
+  enable_database_connections: true  # 启用数据库连接管理
+  enable_template_system: true       # 启用模板系统
+  enable_export_functions: true      # 启用导出功能
+  enable_real_time_sync: false       # 启用实时同步(WebSocket)
+  enable_metrics: false              # 启用指标收集
+
+# 性能配置
+performance:
+  max_nodes: 10000         # 最大节点数量限制
+  max_paths: 50000         # 最大路径数量限制
+  max_export_rows: 100000  # 最大导出行数限制
+  
+# 安全配置
+security:
+  enable_auth: false       # 是否启用认证
+  jwt_secret: "your-secret-key"
+  token_expire: 24         # Token过期时间(小时)
+
+# 缓存配置
+cache:
+  enable: false            # 是否启用缓存
+  type: "memory"           # 缓存类型: memory, redis
+  ttl: 3600               # 缓存TTL(秒)
+  
+  # Redis配置(当type为redis时)
+  redis:
+    addr: "localhost:6379"
+    password: ""
+    db: 0

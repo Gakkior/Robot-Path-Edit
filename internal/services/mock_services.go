@@ -4,6 +4,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"robot-path-editor/internal/domain"
 )
@@ -101,7 +102,7 @@ func (s *MockDatabaseService) UpdateConnection(ctx context.Context, req UpdateCo
 	if req.Name != nil {
 		name = *req.Name
 	}
-	return &domain.DatabaseConnection{ID: string(req.ID), Name: name}, nil
+	return &domain.DatabaseConnection{ID: req.ID, Name: name}, nil
 }
 
 // DeleteConnection 删除数据库连接（Mock实现）
@@ -139,7 +140,7 @@ func (s *MockDatabaseService) UpdateTableMapping(ctx context.Context, req Update
 	if req.TableName != nil {
 		tableName = *req.TableName
 	}
-	return &domain.TableMapping{ID: string(req.ID), TableName: tableName}, nil
+	return &domain.TableMapping{ID: req.ID, TableName: tableName}, nil
 }
 
 // DeleteTableMapping 删除表映射配置（Mock实现）
@@ -150,4 +151,119 @@ func (s *MockDatabaseService) DeleteTableMapping(ctx context.Context, id string)
 // ListTableMappings 列出表映射配置（Mock实现）
 func (s *MockDatabaseService) ListTableMappings(ctx context.Context) ([]*domain.TableMapping, error) {
 	return []*domain.TableMapping{}, nil
+}
+
+// MockDataSyncService Mock数据同步服务实现
+type MockDataSyncService struct{}
+
+// SyncNodesFromExternal 从外部数据库同步节点数据（Mock实现）
+func (s *MockDataSyncService) SyncNodesFromExternal(ctx context.Context, mappingID string) (*SyncResult, error) {
+	return &SyncResult{
+		NodesCreated: 0,
+		NodesUpdated: 0,
+		Errors:       []string{"内存模式下不支持外部数据同步"},
+	}, nil
+}
+
+// SyncPathsFromExternal 从外部数据库同步路径数据（Mock实现）
+func (s *MockDataSyncService) SyncPathsFromExternal(ctx context.Context, mappingID string) (*SyncResult, error) {
+	return &SyncResult{
+		PathsCreated: 0,
+		PathsUpdated: 0,
+		Errors:       []string{"内存模式下不支持外部数据同步"},
+	}, nil
+}
+
+// SyncAllDataFromExternal 全量同步数据（Mock实现）
+func (s *MockDataSyncService) SyncAllDataFromExternal(ctx context.Context, mappingID string) (*SyncResult, error) {
+	return &SyncResult{
+		NodesCreated: 0,
+		NodesUpdated: 0,
+		PathsCreated: 0,
+		PathsUpdated: 0,
+		Errors:       []string{"内存模式下不支持外部数据同步"},
+	}, nil
+}
+
+// ValidateExternalTable 验证外部数据库表结构（Mock实现）
+func (s *MockDataSyncService) ValidateExternalTable(ctx context.Context, connectionID, tableName string) (*TableValidationResult, error) {
+	return &TableValidationResult{
+		Valid:   false,
+		Columns: []string{},
+		Message: "内存模式下不支持外部表验证",
+	}, nil
+}
+
+// MockTemplateService Mock模板服务实现
+type MockTemplateService struct{}
+
+// CreateTemplate 创建模板（Mock实现）
+func (s *MockTemplateService) CreateTemplate(ctx context.Context, req CreateTemplateRequest) (*domain.Template, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// GetTemplate 获取模板（Mock实现）
+func (s *MockTemplateService) GetTemplate(ctx context.Context, id string) (*domain.Template, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// UpdateTemplate 更新模板（Mock实现）
+func (s *MockTemplateService) UpdateTemplate(ctx context.Context, req UpdateTemplateRequest) (*domain.Template, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// DeleteTemplate 删除模板（Mock实现）
+func (s *MockTemplateService) DeleteTemplate(ctx context.Context, id string) error {
+	return fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// ListTemplates 列出模板（Mock实现）
+func (s *MockTemplateService) ListTemplates(ctx context.Context, req ListTemplatesRequest) (*ListTemplatesResponse, error) {
+	return &ListTemplatesResponse{
+		Templates:  []*domain.Template{},
+		Total:      0,
+		Page:       1,
+		PageSize:   20,
+		TotalPages: 0,
+	}, nil
+}
+
+// SearchTemplates 搜索模板（Mock实现）
+func (s *MockTemplateService) SearchTemplates(ctx context.Context, query string) ([]*domain.Template, error) {
+	return []*domain.Template{}, nil
+}
+
+// GetPublicTemplates 获取公开模板（Mock实现）
+func (s *MockTemplateService) GetPublicTemplates(ctx context.Context) ([]*domain.Template, error) {
+	return []*domain.Template{}, nil
+}
+
+// GetTemplatesByCategory 根据分类获取模板（Mock实现）
+func (s *MockTemplateService) GetTemplatesByCategory(ctx context.Context, category string) ([]*domain.Template, error) {
+	return []*domain.Template{}, nil
+}
+
+// ApplyTemplate 应用模板（Mock实现）
+func (s *MockTemplateService) ApplyTemplate(ctx context.Context, templateID string, canvasConfig domain.CanvasConfig) (*ApplyTemplateResponse, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// SaveAsTemplate 保存为模板（Mock实现）
+func (s *MockTemplateService) SaveAsTemplate(ctx context.Context, req SaveAsTemplateRequest) (*domain.Template, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// CloneTemplate 克隆模板（Mock实现）
+func (s *MockTemplateService) CloneTemplate(ctx context.Context, templateID string, newName string) (*domain.Template, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// ExportTemplate 导出模板（Mock实现）
+func (s *MockTemplateService) ExportTemplate(ctx context.Context, templateID string) (*ExportTemplateResponse, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
+}
+
+// ImportTemplate 导入模板（Mock实现）
+func (s *MockTemplateService) ImportTemplate(ctx context.Context, req ImportTemplateRequest) (*domain.Template, error) {
+	return nil, fmt.Errorf("内存模式下不支持模板功能")
 }

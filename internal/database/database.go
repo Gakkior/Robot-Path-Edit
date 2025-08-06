@@ -109,7 +109,13 @@ func (d *database) Connect() error {
 	}
 
 	// 自动迁移数据库结构
-	if err := d.AutoMigrate(&domain.Node{}, &domain.Path{}); err != nil {
+	if err := d.AutoMigrate(
+		&domain.Node{},
+		&domain.Path{},
+		&domain.DatabaseConnection{},
+		&domain.TableMapping{},
+		&domain.Template{},
+	); err != nil {
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
 

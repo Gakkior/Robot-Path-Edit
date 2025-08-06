@@ -1256,6 +1256,9 @@ const indexHTML = `<!DOCTYPE html>
         <button id="nearestPathBtn" style="padding:8px 12px;background:#f39c12;color:white;border:none;border-radius:4px;cursor:pointer;" title="生成最近邻路径">🔗 最近邻</button>
         <button id="fullConnectBtn" style="padding:8px 12px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;" title="生成完全连通">🕸️ 全连通</button>
         <button id="gridPathBtn" style="padding:8px 12px;background:#8e44ad;color:white;border:none;border-radius:4px;cursor:pointer;" title="生成网格路径">📐 网格路径</button>
+        <div style="border-left:1px solid rgba(255,255,255,0.3);margin:0 10px;"></div>
+        <button id="exportMenuBtn" style="padding:8px 12px;background:#17a2b8;color:white;border:none;border-radius:4px;cursor:pointer;" title="导出数据">📤 导出</button>
+        <button id="templateMenuBtn" style="padding:8px 12px;background:#6f42c1;color:white;border:none;border-radius:4px;cursor:pointer;" title="模板管理">📋 模板</button>
     </div>
     <div id="canvas-container" style="position:fixed;left:0;top:0;width:calc(100% - 300px);height:100vh;"></div>
     <div class="container">
@@ -1322,6 +1325,7 @@ const indexHTML = `<!DOCTYPE html>
     </div>
     
     <script src="https://unpkg.com/konva@9.3.3/konva.min.js"></script>
+    <script src="/static/export.js"></script>
     <script src="/static/canvas.js"></script>
     <script>
         // 实时更新统计数据

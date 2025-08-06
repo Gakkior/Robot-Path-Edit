@@ -90,6 +90,7 @@ func New(cfg *config.Config) (*Application, error) {
 		pathRepo = nil
 		dbConnRepo = nil
 		tableMappingRepo = nil
+		templateRepo = nil
 		db = nil
 	} else {
 		// 使用数据库仓储
@@ -97,6 +98,7 @@ func New(cfg *config.Config) (*Application, error) {
 		pathRepo = repositories.NewPathRepository(database)
 		dbConnRepo = repositories.NewDatabaseConnectionRepository(database)
 		tableMappingRepo = repositories.NewTableMappingRepository(database)
+		templateRepo = repositories.NewTemplateRepository(database)
 		db = database
 	}
 
@@ -106,6 +108,8 @@ func New(cfg *config.Config) (*Application, error) {
 	var layoutService services.LayoutService
 	var pluginService services.PluginService
 	var databaseService services.DatabaseService
+	var dataSyncService services.DataSyncService
+	var templateService services.TemplateService
 
 	if pathRepo == nil {
 		// 如果使用内存模式，创建简化的服务
@@ -114,6 +118,8 @@ func New(cfg *config.Config) (*Application, error) {
 		layoutService = services.NewLayoutService()
 		pluginService = services.NewPluginService()
 		databaseService = &services.MockDatabaseService{}
+		dataSyncService = &services.MockDataSyncService{}
+		templateService = &services.MockTemplateService{}
 	} else {
 		// 内存模式下的简化服务
 		nodeService = services.NewNodeService(nodeRepo, pathRepo)
@@ -121,6 +127,8 @@ func New(cfg *config.Config) (*Application, error) {
 		layoutService = services.NewLayoutService()
 		pluginService = services.NewPluginService()
 		databaseService = services.NewDatabaseService(dbConnRepo, tableMappingRepo)
+		dataSyncService = services.NewDataSyncService(dbConnRepo, tableMappingRepo, nodeRepo, pathRepo)
+		templateService = services.NewTemplateService(templateRepo, nodeRepo, pathRepo)
 	}
 
 	// 4. 初始化处理器层 - API接口
@@ -129,6 +137,8 @@ func New(cfg *config.Config) (*Application, error) {
 		pathService,
 		layoutService,
 		databaseService,
+		dataSyncService,
+		templateService,
 	)
 
 	// 5. 创建HTTP服务器
@@ -300,6 +310,34 @@ func (a *Application) setupRoutes() error {
 			analysis.POST("/shortest-path", a.handlers.FindShortestPath)
 			analysis.GET("/connectivity", a.handlers.AnalyzeConnectivity)
 			analysis.GET("/cycles", a.handlers.DetectCycles)
+		}
+
+		// 数据同步相关处理器
+		sync := api.Group("/sync")
+		{
+			sync.POST("/mappings/:mappingId/nodes", a.handlers.SyncNodesFromExternal)
+			sync.POST("/mappings/:mappingId/paths", a.handlers.SyncPathsFromExternal)
+			sync.POST("/mappings/:mappingId/all", a.handlers.SyncAllDataFromExternal)
+			sync.GET("/validate-table", a.handlers.ValidateExternalTable)
+		}
+
+		// 模板相关处理器
+		templates := api.Group("/templates")
+		{
+			templates.GET("", a.handlers.ListTemplates)
+			templates.POST("", a.handlers.CreateTemplate)
+			templates.GET("/public", a.handlers.GetPublicTemplates)
+			templates.GET("/search", a.handlers.SearchTemplates)
+			templates.GET("/category/:category", a.handlers.GetTemplatesByCategory)
+			templates.GET("/stats", a.handlers.GetTemplateStats)
+			templates.GET("/:id", a.handlers.GetTemplate)
+			templates.PUT("/:id", a.handlers.UpdateTemplate)
+			templates.DELETE("/:id", a.handlers.DeleteTemplate)
+			templates.POST("/:id/apply", a.handlers.ApplyTemplate)
+			templates.POST("/:id/clone", a.handlers.CloneTemplate)
+			templates.GET("/:id/export", a.handlers.ExportTemplate)
+			templates.POST("/import", a.handlers.ImportTemplate)
+			templates.POST("/save-as", a.handlers.SaveAsTemplate)
 		}
 	}
 

@@ -3,7 +3,9 @@ package services
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	"robot-path-editor/internal/domain"
 	"robot-path-editor/internal/repositories"
 )
@@ -86,9 +88,26 @@ func NewDatabaseService(
 
 // CreateConnection 创建数据库连接
 func (s *databaseService) CreateConnection(ctx context.Context, req CreateConnectionRequest) (*domain.DatabaseConnection, error) {
-	// 这里应该有实际的数据库连接创建逻辑
-	// 暂时返回空实现
-	return nil, nil
+	// 创建新的数据库连接对象
+	conn := &domain.DatabaseConnection{
+		ID:         generateID(),
+		Name:       req.Name,
+		Type:       req.Type,
+		Host:       req.Host,
+		Port:       req.Port,
+		Database:   req.Database,
+		Username:   req.Username,
+		Password:   req.Password,
+		Properties: req.Properties,
+	}
+
+	// 保存到数据库
+	err := s.dbConnRepo.Create(ctx, conn)
+	if err != nil {
+		return nil, fmt.Errorf("创建数据库连接失败: %w", err)
+	}
+
+	return conn, nil
 }
 
 // GetConnection 获取数据库连接
@@ -98,9 +117,45 @@ func (s *databaseService) GetConnection(ctx context.Context, id string) (*domain
 
 // UpdateConnection 更新数据库连接
 func (s *databaseService) UpdateConnection(ctx context.Context, req UpdateConnectionRequest) (*domain.DatabaseConnection, error) {
-	// 这里应该有实际的更新逻辑
-	// 暂时返回空实现
-	return nil, nil
+	// 获取现有连接
+	conn, err := s.dbConnRepo.GetByID(ctx, req.ID)
+	if err != nil {
+		return nil, fmt.Errorf("获取数据库连接失败: %w", err)
+	}
+
+	// 更新非空字段
+	if req.Name != nil {
+		conn.Name = *req.Name
+	}
+	if req.Type != nil {
+		conn.Type = *req.Type
+	}
+	if req.Host != nil {
+		conn.Host = *req.Host
+	}
+	if req.Port != nil {
+		conn.Port = *req.Port
+	}
+	if req.Database != nil {
+		conn.Database = *req.Database
+	}
+	if req.Username != nil {
+		conn.Username = *req.Username
+	}
+	if req.Password != nil {
+		conn.Password = *req.Password
+	}
+	if req.Properties != nil {
+		conn.Properties = req.Properties
+	}
+
+	// 保存更新
+	err = s.dbConnRepo.Update(ctx, conn)
+	if err != nil {
+		return nil, fmt.Errorf("更新数据库连接失败: %w", err)
+	}
+
+	return conn, nil
 }
 
 // DeleteConnection 删除数据库连接
@@ -120,9 +175,28 @@ func (s *databaseService) TestConnection(ctx context.Context, id string) error {
 
 // CreateTableMapping 创建表映射
 func (s *databaseService) CreateTableMapping(ctx context.Context, req CreateTableMappingRequest) (*domain.TableMapping, error) {
-	// 这里应该有实际的表映射创建逻辑
-	// 暂时返回空实现
-	return nil, nil
+	// 验证连接是否存在
+	_, err := s.dbConnRepo.GetByID(ctx, req.ConnectionID)
+	if err != nil {
+		return nil, fmt.Errorf("数据库连接不存在: %w", err)
+	}
+
+	// 创建表映射对象
+	mapping := &domain.TableMapping{
+		ID:           generateID(),
+		ConnectionID: req.ConnectionID,
+		TableName:    req.TableName,
+		NodeMapping:  req.NodeMapping,
+		PathMapping:  req.PathMapping,
+	}
+
+	// 保存到数据库
+	err = s.tableMappingRepo.Create(ctx, mapping)
+	if err != nil {
+		return nil, fmt.Errorf("创建表映射失败: %w", err)
+	}
+
+	return mapping, nil
 }
 
 // GetTableMapping 获取表映射
@@ -132,14 +206,40 @@ func (s *databaseService) GetTableMapping(ctx context.Context, id string) (*doma
 
 // UpdateTableMapping 更新表映射
 func (s *databaseService) UpdateTableMapping(ctx context.Context, req UpdateTableMappingRequest) (*domain.TableMapping, error) {
-	// 这里应该有实际的更新逻辑
-	// 暂时返回空实现
-	return nil, nil
+	// 获取现有映射
+	mapping, err := s.tableMappingRepo.GetByID(ctx, req.ID)
+	if err != nil {
+		return nil, fmt.Errorf("获取表映射失败: %w", err)
+	}
+
+	// 更新非空字段
+	if req.TableName != nil {
+		mapping.TableName = *req.TableName
+	}
+	if req.NodeMapping != nil {
+		mapping.NodeMapping = req.NodeMapping
+	}
+	if req.PathMapping != nil {
+		mapping.PathMapping = req.PathMapping
+	}
+
+	// 保存更新
+	err = s.tableMappingRepo.Update(ctx, mapping)
+	if err != nil {
+		return nil, fmt.Errorf("更新表映射失败: %w", err)
+	}
+
+	return mapping, nil
 }
 
 // DeleteTableMapping 删除表映射
 func (s *databaseService) DeleteTableMapping(ctx context.Context, id string) error {
 	return s.tableMappingRepo.Delete(ctx, id)
+}
+
+// generateID 生成唯一ID
+func generateID() string {
+	return uuid.New().String()
 }
 
 // ListTableMappings 列出表映射
