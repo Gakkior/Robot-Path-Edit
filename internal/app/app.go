@@ -76,6 +76,7 @@ func New(cfg *config.Config) (*Application, error) {
 	var pathRepo repositories.PathRepository
 	var dbConnRepo repositories.DatabaseConnectionRepository
 	var tableMappingRepo repositories.TableMappingRepository
+	var templateRepo repositories.TemplateRepository
 	var db database.Database
 
 	// 尝试初始化数据库
