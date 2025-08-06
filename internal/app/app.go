@@ -348,6 +348,9 @@ func (a *Application) setupRoutes() error {
 	// 静态文件服务 - 前端资源
 	a.router.StaticFS("/static", http.FS(web.StaticFiles))
 
+	// 新前端静态文件 (如果构建了的话)
+	a.router.Static("/app/new", "./web/static/new-frontend")
+
 	// 首页 - 介绍页面
 	a.router.GET("/", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", web.IndexHTML)
@@ -356,6 +359,11 @@ func (a *Application) setupRoutes() error {
 	// 应用界面 - 主要的编辑器界面
 	a.router.GET("/app", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", web.AppHTML)
+	})
+
+	// 新前端应用界面
+	a.router.GET("/app/new", func(c *gin.Context) {
+		c.File("./web/static/new-frontend/index.html")
 	})
 
 	return nil
