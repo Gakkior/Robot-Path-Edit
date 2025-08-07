@@ -3,28 +3,32 @@ version: '3.8'
 
 services:
   # 主应用服务
-  robot-path-editor:
+  app:
     build: .
+    container_name: robot-path-editor
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_TYPE=mysql
-      - DATABASE_DSN=root:password@tcp(mysql:3306)/robot_paths?charset=utf8mb4&parseTime=True&loc=Local
+      - DATABASE_TYPE=sqlite
+      - DATABASE_DSN=./data/robot-path-editor.db
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
       - LOG_LEVEL=info
-    depends_on:
-      - mysql
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    networks:
-      - robot-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # MySQL 数据库
+  # MySQL 数据库 (可选)
   mysql:
     image: mysql:8.0
+    container_name: robot-mysql
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: robot_paths
@@ -35,68 +39,27 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - robot-network
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password
-
-  # Redis 缓存 (可选)
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - robot-network
-    restart: unless-stopped
     profiles:
-      - cache
-
-  # Nginx 反向代理 (生产环境)
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/ssl/certs
-    depends_on:
-      - robot-path-editor
-    networks:
-      - robot-network
-    restart: unless-stopped
-    profiles:
-      - production
+      - mysql
 
 volumes:
   mysql_data:
-  redis_data:
-
-networks:
-  robot-network:
-    driver: bridge
 
 # 使用说明:
 # 
-# 开发环境启动:
-# docker-compose up -d robot-path-editor mysql
+# 启动SQLite版本 (推荐):
+# docker-compose up -d app
 #
-# 包含缓存的启动:
-# docker-compose --profile cache up -d
-# 
-# 生产环境启动:
-# docker-compose --profile production up -d
-#
-# 仅启动数据库:
-# docker-compose up -d mysql
+# 启动MySQL版本:
+# docker-compose --profile mysql up -d
 #
 # 查看日志:
-# docker-compose logs -f robot-path-editor
+# docker-compose logs -f app
 #
-# 停止所有服务:
+# 停止服务:
 # docker-compose down
 #
-# 完全清理(包括数据):
+# 完全清理:
 # docker-compose down -v
