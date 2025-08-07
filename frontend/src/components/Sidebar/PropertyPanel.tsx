@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react' // Import useState and useEffect
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAppStore, useDataActions } from '@/stores/useAppStore'
+import { useAppStore } from '@/stores/useAppStore'
 import { useDeleteNode, useDeletePath } from '@/services'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -17,16 +17,13 @@ import { Badge } from '@/components/ui/Badge'
 import type { Node, Path, NodeType, PathType } from '@/types' // Import specific types
 
 export const PropertyPanel: React.FC = () => {
-  const { nodes, paths, selectedElements } = useAppStore()
+  const { nodes, paths, selectedNodeId, selectedPathId } = useAppStore()
   
-  const selectedNodeIds = Array.from(selectedElements.selectedNodes)
-  const selectedPathIds = Array.from(selectedElements.selectedPaths)
-  
-  const selectedNode = selectedNodeIds.length === 1 ? nodes[selectedNodeIds[0]] : null
-  const selectedPath = selectedPathIds.length === 1 ? paths[selectedPathIds[0]] : null
+  const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null
+  const selectedPath = selectedPathId ? paths.find(p => p.id === selectedPathId) : null
   
   // If no elements are selected
-  if (selectedNodeIds.length === 0 && selectedPathIds.length === 0) {
+  if (!selectedNodeId && !selectedPathId) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -42,59 +39,7 @@ export const PropertyPanel: React.FC = () => {
     )
   }
   
-  // Multiple selection state
-  if (selectedNodeIds.length > 1 || selectedPathIds.length > 1) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-6"
-      >
-        <h3 className="text-lg font-medium text-gray-900 mb-4">批量编辑</h3>
-        <div className="space-y-4">
-          {selectedNodeIds.length > 0 && (
-            <div>
-              <Badge variant="secondary" className="mb-2">
-                {selectedNodeIds.length} 个节点
-              </Badge>
-              <div className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full">
-                  批量设置类型
-                </Button>
-                <Button variant="outline" size="sm" className="w-full">
-                  批量设置状态
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {selectedPathIds.length > 0 && (
-            <div>
-              <Badge variant="secondary" className="mb-2">
-                {selectedPathIds.length} 条路径
-              </Badge>
-              <div className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full">
-                  批量设置权重
-                </Button>
-                <Button variant="outline" size="sm" className="w-full">
-                  批量设置类型
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          <Separator />
-          
-          <div className="space-y-2">
-            <Button variant="destructive" size="sm" className="w-full">
-              删除选中项
-            </Button>
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
+
   
   return (
     <div className="h-full overflow-y-auto">
@@ -112,8 +57,7 @@ export const PropertyPanel: React.FC = () => {
 
 // 节点属性面板
 const NodePropertyPanel: React.FC<{ node: Node }> = ({ node }) => {
-  const { deleteNode, setSelectedNodeId } = useAppStore()
-  const { setNode, setDirty } = useDataActions()
+  const { updateNode, deleteNode, setSelectedNodeId, setIsDirty } = useAppStore()
   const deleteNodeMutation = useDeleteNode()
 
   // Local state for editable fields
@@ -135,8 +79,7 @@ const NodePropertyPanel: React.FC<{ node: Node }> = ({ node }) => {
   }, [node])
 
   const handleSave = () => {
-    setNode(node.id, {
-      ...node,
+    updateNode(node.id, {
       name,
       type,
       status,
@@ -147,7 +90,7 @@ const NodePropertyPanel: React.FC<{ node: Node }> = ({ node }) => {
       },
       updated_at: new Date().toISOString(),
     })
-    setDirty(true) // Mark as dirty after saving
+    setIsDirty(true) // Mark as dirty after saving
     console.log('Node saved:', { id: node.id, name, type, status, position: { x: posX, y: posY, z: posZ } })
   }
 
@@ -289,8 +232,7 @@ const NodePropertyPanel: React.FC<{ node: Node }> = ({ node }) => {
 
 // 路径属性面板
 const PathPropertyPanel: React.FC<{ path: Path }> = ({ path }) => {
-  const { nodes, deletePath, setSelectedPathId } = useAppStore()
-  const { setPath, setDirty } = useDataActions()
+  const { nodes, updatePath, deletePath, setSelectedPathId, setIsDirty } = useAppStore()
   const deletePathMutation = useDeletePath()
 
   // Local state for editable fields
@@ -308,15 +250,14 @@ const PathPropertyPanel: React.FC<{ path: Path }> = ({ path }) => {
   }, [path])
 
   const handleSave = () => {
-    setPath(path.id, {
-      ...path,
+    updatePath(path.id, {
       name,
       type,
       status,
       weight: parseFloat(weight.toFixed(2)), // Ensure two decimal places
       updated_at: new Date().toISOString(),
     })
-    setDirty(true) // Mark as dirty after saving
+    setIsDirty(true) // Mark as dirty after saving
     console.log('Path saved:', { id: path.id, name, type, status, weight })
   }
 
@@ -328,8 +269,8 @@ const PathPropertyPanel: React.FC<{ path: Path }> = ({ path }) => {
     }
   }
   
-  const startNode = nodes.find(n => n.id === path.start_node_id)
-  const endNode = nodes.find(n => n.id === path.end_node_id)
+  const startNode = nodes.find(n => n.id === path.from)
+  const endNode = nodes.find(n => n.id === path.to)
   
   return (
     <motion.div
@@ -407,13 +348,13 @@ const PathPropertyPanel: React.FC<{ path: Path }> = ({ path }) => {
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="text-xs text-gray-500 mb-1">起始节点</div>
               <div className="font-medium">{startNode?.name || '未知节点'}</div>
-              <div className="text-xs text-gray-500">ID: {path.start_node_id}</div>
+              <div className="text-xs text-gray-500">ID: {path.from}</div>
             </div>
             <div className="text-center text-gray-400">↓</div>
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="text-xs text-gray-500 mb-1">结束节点</div>
               <div className="font-medium">{endNode?.name || '未知节点'}</div>
-              <div className="text-xs text-gray-500">ID: {path.end_node_id}</div>
+              <div className="text-xs text-gray-500">ID: {path.to}</div>
             </div>
           </div>
         </div>

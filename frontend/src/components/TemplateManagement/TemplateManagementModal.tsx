@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea' // Corrected import
 import { Label } from '@/components/ui/Label'
+import { Separator } from '@/components/ui/Separator'
 import { useAppStore } from '@/stores/useAppStore'
 import { useTemplates, useSaveAsTemplate, useApplyTemplate, useDeleteTemplate, useImportTemplate, useExportTemplate } from '@/services/api'
 import { Template, SaveAsTemplateRequest } from '@/types'

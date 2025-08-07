@@ -208,7 +208,7 @@ export const databaseApi = {
 };
 
 export const useDatabaseConnections = () => useQuery<DatabaseConnection[], Error>({ queryKey: ['databaseConnections'], queryFn: databaseApi.listConnections });
-export const useCreateDatabaseConnection = () => {
+export const useCreateConnection = () => {
  const queryClient = useQueryClient();
  return useMutation<DatabaseConnection, Error, Omit<DatabaseConnection, 'id' | 'createdAt' | 'updatedAt'>>({
    mutationFn: databaseApi.createConnection,
@@ -217,7 +217,7 @@ export const useCreateDatabaseConnection = () => {
    },
  });
 };
-export const useUpdateDatabaseConnection = () => {
+export const useUpdateConnection = () => {
  const queryClient = useQueryClient();
  return useMutation<DatabaseConnection, Error, { id: string; data: Partial<DatabaseConnection> }>({
    mutationFn: ({ id, data }) => databaseApi.updateConnection(id, data),
@@ -226,7 +226,7 @@ export const useUpdateDatabaseConnection = () => {
    },
  });
 };
-export const useDeleteDatabaseConnection = () => {
+export const useDeleteConnection = () => {
  const queryClient = useQueryClient();
  return useMutation<any, Error, string>({
    mutationFn: databaseApi.deleteConnection,
@@ -235,14 +235,14 @@ export const useDeleteDatabaseConnection = () => {
    },
  });
 };
-export const useTestDatabaseConnection = () => {
+export const useTestConnection = () => {
  return useMutation<any, Error, string>({
    mutationFn: databaseApi.testConnection,
  });
 };
 
 export const useTableMappings = () => useQuery<TableMapping[], Error>({ queryKey: ['tableMappings'], queryFn: databaseApi.listTableMappings });
-export const useCreateTableMapping = () => {
+export const useCreateMapping = () => {
  const queryClient = useQueryClient();
  return useMutation<TableMapping, Error, Omit<TableMapping, 'id' | 'createdAt' | 'updatedAt'>>({
    mutationFn: databaseApi.createTableMapping,
@@ -251,7 +251,7 @@ export const useCreateTableMapping = () => {
    },
  });
 };
-export const useUpdateTableMapping = () => {
+export const useUpdateMapping = () => {
  const queryClient = useQueryClient();
  return useMutation<TableMapping, Error, { id: string; data: Partial<TableMapping> }>({
    mutationFn: ({ id, data }) => databaseApi.updateTableMapping(id, data),
@@ -260,7 +260,7 @@ export const useUpdateTableMapping = () => {
    },
  });
 };
-export const useDeleteTableMapping = () => {
+export const useDeleteMapping = () => {
  const queryClient = useQueryClient();
  return useMutation<any, Error, string>({
    mutationFn: databaseApi.deleteTableMapping,

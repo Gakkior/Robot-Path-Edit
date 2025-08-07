@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
+    "@tanstack/react-query-devtools": "^5.84.1",
+    "immer": "^10.1.1"
+  }
+}
